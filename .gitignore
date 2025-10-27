@@ -1,0 +1,14 @@
+node_modules
+.svelte-kit
+build
+dist
+.env
+.env.*
+.DS_Store
+npm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.vscode/
+.idea/
+data/
