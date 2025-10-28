@@ -1,0 +1,27 @@
+# Exported from Render on 2025-10-28T19:43:10Z
+version: "1"
+projects:
+- name: sdtm
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: sdtm.ai
+      runtime: python
+      repo: https://github.com/avidys/sdtm.ai
+      plan: free
+      region: oregon
+      buildCommand: pip install -r requirements.txt
+      startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+      autoDeployTrigger: commit
+      env: 
+        - type: plain
+          key: PYTHONPATH
+          value: .
+    - type: web
+      name: sdtm.ai.frontend
+      runtime: static
+      region: oregon
+      buildCommand: npm run build
+      autoDeployTrigger: commit
+      publishDir: build
