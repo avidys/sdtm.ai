@@ -1,5 +1,16 @@
 node_modules
-*/node_modules/**
+**/node_modules
+**/venv
+**/.venv
+**/__pycache__
+**/dist
+**/build
+**/dist-ssr
+**/dist-ssr-index.html
+**/dist-ssr-index.html.gz
+**/dist-ssr-index.html.br
+**/dist-ssr-index.html.br.gz
+**/dist-ssr-index.html.br.gz.br
 test-results
 
 # Output

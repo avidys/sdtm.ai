@@ -1,0 +1,8 @@
+ignoredBuiltDependencies:
+  - sharp
+
+onlyBuiltDependencies:
+  - duckdb
+  - esbuild
+  - fs-ext
+  - workerd
