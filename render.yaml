@@ -1,0 +1,52 @@
+# Exported from Render on 2025-10-28T19:43:10Z
+version: "1"
+projects:
+- name: sdtm
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: backend
+      runtime: python
+      repo: https://github.com/avidys/sdtm.ai
+      branch: main
+      plan: free
+      region: oregon
+      buildCommand: pip install -r requirements.txt
+      startCommand: uvicorn main:app --host 0.0.0.0 --port 4000
+      autoDeployTrigger: commit
+      env: 
+        - type: plain
+          key: PYTHONPATH
+          value: .
+    - type: web
+      name: frontend
+      runtime: node
+      plan: free
+      region: oregon
+      buildCommand: cd frontend && npm install && npm run build
+      startCommand: cd frontend && npm start
+      repo: https://github.com/avidys/sdtm.ai
+      branch: main
+      envVars:
+        - key: NODE_ENV
+          value: production
+      # Optional: Add custom domains
+      # domains:
+      #   - myapp.com
+      #   - www.myapp.com
+
+  # - type: web
+  #   name: flask-backend
+  #   runtime: python
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: gunicorn app:app
+  #   repo: https://github.com/avidys/sdtm.ai
+  #   branch: main
+  #   envVars:
+  #     - key: FLASK_ENV
+  #       value: production
+  #     - key: DATABASE_URL
+  #       fromSecret: DATABASE_URL  # Reference a secret stored in Render
+  #     - key: SECRET_KEY
+  #       fromSecret: SECRET_KEY
