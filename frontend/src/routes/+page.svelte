@@ -14,14 +14,16 @@
   let alertMessage = '';
   let alertType: 'warning' | 'critical' = 'warning';
   
+  const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
+
   onMount(async () => {
     // Initial data fetch
-    const response = await fetch('/api/current'); // f'http://{API_URL}/current'
+    const response = await fetch(`${BACKEND_URL}/api/current`); 
     currentReading = await response.json();
     historicalData = [currentReading];
     
     // Set up SSE connection
-    eventSource = new EventSource('/api/stream');
+    eventSource = new EventSource(`${BACKEND_URL}/api/stream`);
     eventSource.addEventListener('sensor_update', (event) => {
       currentReading = JSON.parse(event.data);
       historicalData = [...historicalData, currentReading].slice(-30); // Keep last 30 readings
