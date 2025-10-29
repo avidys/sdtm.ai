@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SDTM.ai Compliance Portal
 
 A SvelteKit application for validating clinical study data against CDISC SDTM and SDTMIG standards. The app ingests SAS, CSV, or Parquet files, loads metadata into DuckDB, performs standard-driven quality checks, and exports findings for remediation.
@@ -48,10 +47,3 @@ A SvelteKit application for validating clinical study data against CDISC SDTM an
 Set `SDTM_AI_ADAPTER=vercel` or `SDTM_AI_ADAPTER=cloudflare` during the build step to generate platform-specific output. The default adapter is `@sveltejs/adapter-auto`.
 
 The DuckDB database is stored locally. For production, consider configuring Supabase/Postgres tables to persist dataset metadata.
-=======
-# sdtm.ai
-
-- backends flask fro dash
-- fastapi for DB
-- node for SPA sveltekit
->>>>>>> remote-repo-history
