@@ -6,21 +6,21 @@ projects:
   - name: Production
     services:
     - type: web
-      name: sdtm.ai
+      name: backend
       runtime: python
       repo: https://github.com/avidys/sdtm.ai
       branch: main
       plan: free
       region: oregon
       buildCommand: pip install -r requirements.txt
-      startCommand: uvicorn main:app --host 0.0.0.0 --port 8080
+      startCommand: uvicorn main:app --host 0.0.0.0 --port 4000
       autoDeployTrigger: commit
       env: 
         - type: plain
           key: PYTHONPATH
           value: .
     - type: web
-      name: sdtm.ai.frontend
+      name: frontend
       runtime: node
       plan: free
       region: oregon
@@ -36,17 +36,17 @@ projects:
       #   - myapp.com
       #   - www.myapp.com
 
-    - type: web
-      name: flask-backend
-      runtime: python
-      buildCommand: pip install -r requirements.txt
-      startCommand: gunicorn app:app
-      repo: https://github.com/avidys/sdtm.ai
-      branch: main
-      envVars:
-        - key: FLASK_ENV
-          value: production
-        - key: DATABASE_URL
-          fromSecret: DATABASE_URL  # Reference a secret stored in Render
-        - key: SECRET_KEY
-          fromSecret: SECRET_KEY
+  # - type: web
+  #   name: flask-backend
+  #   runtime: python
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: gunicorn app:app
+  #   repo: https://github.com/avidys/sdtm.ai
+  #   branch: main
+  #   envVars:
+  #     - key: FLASK_ENV
+  #       value: production
+  #     - key: DATABASE_URL
+  #       fromSecret: DATABASE_URL  # Reference a secret stored in Render
+  #     - key: SECRET_KEY
+  #       fromSecret: SECRET_KEY
