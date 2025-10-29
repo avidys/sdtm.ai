@@ -14,3 +14,5 @@ def get_data():
     
     # This is the data that will be sent back to the SvelteKit load function
     return {"message": "Hello from your FastAPI backend!", "value": 123}
+
+    

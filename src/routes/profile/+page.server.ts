@@ -9,16 +9,21 @@ const schema = z.object({
 });
 
 export const load: PageServerLoad = async ({ locals }) => {
-  if (!locals.session) {
+  if (!locals.user) {
     throw redirect(303, '/login');
   }
-  const profile = await getProfile(locals.supabase, locals.session);
+  // Use authenticated user from getUser() instead of session.user for security
+  const profile = await getProfile(
+    locals.supabase,
+    locals.user.id,
+    locals.user.email ?? null
+  );
   return { profile };
 };
 
 export const actions: Actions = {
   default: async ({ request, locals }) => {
-    if (!locals.session) {
+    if (!locals.user) {
       throw redirect(303, '/login');
     }
     const data = Object.fromEntries(await request.formData());
@@ -27,9 +32,10 @@ export const actions: Actions = {
       return fail(400, { errors: parsed.error.flatten().fieldErrors });
     }
 
+    // Use authenticated user from getUser() instead of session.user for security
     await upsertProfile(locals.supabase, {
-      id: locals.session.user.id,
-      email: locals.session.user.email ?? '',
+      id: locals.user.id,
+      email: locals.user.email ?? '',
       fullName: parsed.data.fullName,
       organization: parsed.data.organization
     });

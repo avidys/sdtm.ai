@@ -47,3 +47,11 @@ A SvelteKit application for validating clinical study data against CDISC SDTM an
 Set `SDTM_AI_ADAPTER=vercel` or `SDTM_AI_ADAPTER=cloudflare` during the build step to generate platform-specific output. The default adapter is `@sveltejs/adapter-auto`.
 
 The DuckDB database is stored locally. For production, consider configuring Supabase/Postgres tables to persist dataset metadata.
+
+
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "/api/$1"
+      }
+    ],

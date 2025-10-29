@@ -1,19 +1,19 @@
-{
+  {
     "version": 2,
     "builds": [
       {
-        "src": "main.py",
+        "src": "api/**/*.py",
         "use": "@vercel/python"
-      },
-      {
-        "src": "package.json",
-        "use": "@vercel/sveltekit"
       }
     ],
-    "rewrites": [
+    "routes": [
+      {
+        "src": "/api/data",
+        "dest": "/api/data.py"
+      },
       {
         "src": "/api/(.*)",
-        "dest": "main.py"
+        "dest": "/api/index.py"
       }
     ]
-  }
+}
