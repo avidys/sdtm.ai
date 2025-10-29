@@ -1,4 +1,4 @@
-import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 export interface UserProfile {
@@ -19,25 +19,26 @@ const profileSchema = z.object({
 
 export async function getProfile(
   supabase: SupabaseClient,
-  session: Session | null
+  userId: string | null,
+  userEmail?: string | null
 ): Promise<UserProfile | null> {
-  if (!session) return null;
+  if (!userId) return null;
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', userId)
     .maybeSingle();
   if (error) {
     console.error('Unable to fetch profile', error);
     return {
-      id: session.user.id,
-      email: session.user.email ?? 'unknown'
+      id: userId,
+      email: userEmail ?? 'unknown'
     };
   }
   if (!data) {
     return {
-      id: session.user.id,
-      email: session.user.email ?? 'unknown'
+      id: userId,
+      email: userEmail ?? 'unknown'
     };
   }
   const parsed = profileSchema.parse(data);

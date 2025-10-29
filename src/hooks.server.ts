@@ -39,10 +39,23 @@ export const handle: Handle = async ({ event, resolve }) => {
   );
 
   event.locals.supabase = supabase;
+  
+  // Use getUser() instead of getSession() for security - authenticates with server
+  // getUser() validates the token with Supabase server, preventing cookie tampering
+  // This eliminates the warning about insecure session.user usage
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
-  event.locals.session = session;
+    data: { user }
+  } = await supabase.auth.getUser();
+  
+  // CRITICAL: Never use session.user - it's from untrusted cookies
+  // We only get session for token storage, but user authentication comes from getUser()
+  // If user is null, session should also be null (user not authenticated)
+  const session = user 
+    ? await supabase.auth.getSession().then(({ data }) => data?.session ?? null)
+    : null;
+  
+  event.locals.session = session; // Only used for token storage, NOT for user data
+  event.locals.user = user; // Use this for all user authentication - validated with server
   event.locals.database = database;
 
   return resolve(event);

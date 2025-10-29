@@ -101,3 +101,35 @@ export const actions: Actions = {
     }
   }
 };
+
+
+// src/routes/(app)/datasets/+page.server.ts
+// export const load: PageServerLoad = async ({ fetch, url }) => {
+//   // Use relative URL - Vercel will route it to Python function
+//   const apiUrl = '/api/data';  // Changed from absolute URL
+  
+//   const response = await fetch(apiUrl, {
+//     headers: {
+//       'Accept': 'application/json',
+//     }
+//   });
+  
+//   if (!response.ok) {
+//     console.error(`Error: ${response.statusText}`);
+//     return { 
+//       datasets: [],
+//       runs: [],
+//       standards: STANDARD_CATALOG,
+//       error: "Failed to load data from Python API" 
+//     };
+//   }
+
+//   const data = await response.json();
+  
+//   return {
+//     datasets: [],
+//     runs: [],
+//     standards: STANDARD_CATALOG,
+//     pythonData: data
+//   };
+// };
