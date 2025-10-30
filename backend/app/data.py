@@ -1,4 +1,5 @@
 # api/data.py
+# alternate server - not used
 from http.server import BaseHTTPRequestHandler
 import json
 

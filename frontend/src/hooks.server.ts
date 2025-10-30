@@ -8,10 +8,8 @@ const database = createDatabase();
 
 
 export const handle: Handle = async ({ event, resolve }) => {
-  const supabaseUrl = env.SUPABASE_URL;
-  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
-  //const supabaseUrl = process.env.SUPABASE_URL ?? '';
-  //const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? '';
+  const supabaseUrl = env.SUPABASE_URL ?? '';
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY ?? '';
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase environment variables are not configured. Authentication will be disabled.');
   }

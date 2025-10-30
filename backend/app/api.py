@@ -53,3 +53,13 @@ async def stream_data():
 @app.get("/api/items/{item_id}")
 def read_item(item_id: int, q: Optional[str] = None):
     return {"item_id": item_id, "q": q}
+
+
+@app.get("/api/data")
+def get_data():
+    print("Python API was hit successfully!")
+    
+    # This is the data that will be sent back to the SvelteKit load function
+    return {"message": "Hello from your FastAPI backend!", "value": 123}
+
+    

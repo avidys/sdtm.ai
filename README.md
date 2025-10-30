@@ -13,18 +13,31 @@ A SvelteKit application for validating clinical study data against CDISC SDTM an
 
 ## Getting started
 
-1. Install dependencies:
+0. preresuisite
+   - node
+   - pnpm
+   - python >= 3.12
+   - uv
+  
+1. Run the backend development server:
+
    ```bash
-   npm install
+   cd backend
+   uv pip install / uv sync --> create .venv
+   uv run main.py
+   # or
+   uv run uvicorn app.api:app
    ```
-2. Configure environment variables:
+
+2. Run the frontend development server:
+
    ```bash
+   cd frontend
    cp .env.example .env
    # set SUPABASE_URL, SUPABASE_ANON_KEY, and optional SDTM_AI_DUCKDB_PATH
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
+   pnpm i
+   pnpm build
+   pnpm dev
    ```
 
 ## Environment variables
@@ -47,11 +60,3 @@ A SvelteKit application for validating clinical study data against CDISC SDTM an
 Set `SDTM_AI_ADAPTER=vercel` or `SDTM_AI_ADAPTER=cloudflare` during the build step to generate platform-specific output. The default adapter is `@sveltejs/adapter-auto`.
 
 The DuckDB database is stored locally. For production, consider configuring Supabase/Postgres tables to persist dataset metadata.
-
-
-    "routes": [
-      {
-        "src": "/api/(.*)",
-        "dest": "/api/$1"
-      }
-    ],
