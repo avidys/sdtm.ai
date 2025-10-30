@@ -21,8 +21,9 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
   // Use the same host but different port from environment variable
   const hostname = url.hostname;
   const protocol = url.protocol;
-  const apiPort = process.env.API_PORT || 8000; // Default to 8000 if not set
-  const apiUrl = `${protocol}//${hostname}:${apiPort}/api/data`;
+  const apiPort = process.env.API_PORT || 80; // Default to 8000 if not set
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost';
+  const apiUrl = `${backendUrl}:${apiPort}/api/data`;
   console.log(`SvelteKit server is fetching: ${apiUrl}`);
   
   // 2. Make an HTTP request from the SvelteKit server to the API.
