@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"start": "node build/index.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -50,7 +51,6 @@
 		"parquetjs-lite": "^0.8.7",
 		"sas7bdat": "^0.1.7",
 		"uuid": "^13.0.0",
-		"vercel": "^48.6.7",
 		"xlsx": "^0.18.5",
 		"xport-js": "^0.3.2",
 		"zod": "^4.1.12"
