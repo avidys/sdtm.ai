@@ -16,12 +16,16 @@ import { STANDARD_CATALOG } from '$lib/standards/catalog';
 //   };
 // };
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
+  if (!locals.session) {
+    throw redirect(303, '/login');
+  }  
+  
   // 1. Construct the absolute URL to your API endpoint.
   // Use the same host but different port from environment variable
-  const hostname = url.hostname;
-  const protocol = url.protocol;
-  const apiPort = process.env.API_PORT || 80; // Default to 8000 if not set
+  //const hostname = url.hostname;
+  //const protocol = url.protocol;
+  const apiPort = process.env.API_PORT || 8000; // Default to 8000 if not set
   const backendUrl = process.env.BACKEND_URL || 'http://localhost';
   const apiUrl = `${backendUrl}:${apiPort}/api/data`;
   console.log(`SvelteKit server is fetching: ${apiUrl}`);
@@ -39,25 +43,22 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
   const data = await response.json();
   console.log(`Data: ${data}`);
 
-  return {
-    datasets: [],
-    runs: [],
-    standards: STANDARD_CATALOG,
-    pythonData: data
-  };
+
   // 3. Return the data to your +page.svelte file
   // return {
   //     pythonData: data
   // };
+  return {
+    datasets: locals.database.listDatasets(),
+    runs: locals.database.listRuns(),
+    standards: STANDARD_CATALOG,
+    pythonData: data
+  };
 }
 
 export const actions: Actions = {
   default: async ({ request, locals }) => {
-    return {
-      success: true,
-      ingested: [],
-      message: `This is a test.`
-    };
+
     if (!locals.session) {
       throw redirect(303, '/login');
     }
@@ -72,6 +73,55 @@ export const actions: Actions = {
     if (files.length === 0) {
       return fail(400, { message: 'Please upload at least one dataset file.' });
     }
+
+    const apiPort = process.env.API_PORT || 8000; // Default to 8000 if not set
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost';
+    const parseUrl = `${backendUrl}:${apiPort}/api/parse`;
+    console.log(`Forwarding upload(s) to Python API: ${parseUrl}`);
+
+    // Forward each uploaded file to the Python API as multipart/form-data
+    const parsedResults: Array<{ name: string; ok: boolean; status: number; body?: unknown }> = [];
+    for (const file of files) {
+      const fd = new FormData();
+      // Send original filename and bytes; backend can persist to a temp file if desired
+      const buffer = Buffer.from(await file.arrayBuffer());
+      fd.append('file', new Blob([buffer], { type: file.type || 'application/octet-stream' }), file.name);
+
+      const resp = await fetch(parseUrl, {
+        method: 'POST',
+        body: fd
+      });
+      let body: unknown = undefined;
+      try {
+        const ctype = resp.headers.get('content-type') || '';
+        if (ctype.includes('application/json')) {
+          body = await resp.json();
+        } else {
+          const text = await resp.text();
+          // keep response snippet small to avoid huge payloads in UI
+          body = {
+            contentType: ctype || 'unknown',
+            text: text.length > 2000 ? text.slice(0, 2000) + '…' : text
+          };
+        }
+      } catch (err) {
+        body = {
+          parseError: err instanceof Error ? err.message : String(err)
+        };
+      }
+      parsedResults.push({ name: file.name, ok: resp.ok, status: resp.status, body });
+      if (!resp.ok) {
+        console.error(`Backend parse failed for ${file.name}: ${resp.status} ${resp.statusText}`);
+      }
+    }
+
+    return {
+      success: parsedResults.every(r => r.ok),
+      ingested: [],
+      message: `Forwarded ${files.length} file(s) to backend for parsing`,
+      parsedResults
+    };
+
 
     try {
       const standard = await loadStandardDefinition(standardId);

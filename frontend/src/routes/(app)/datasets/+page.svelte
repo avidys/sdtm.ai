@@ -7,7 +7,7 @@
     standards: StandardSummary[];
     pythonData?: unknown;
   };
-  export let form: { success?: boolean; message?: string; ingested?: { datasetId: string; runId: string }[] } | undefined;
+  export let form: { success?: boolean; message?: string; ingested?: { datasetId: string; runId: string }[]; parsedResults?: { name: string; ok: boolean; status: number; body?: unknown }[] } | undefined;
 </script>
 
 <h1>Ingest datasets</h1>
@@ -49,6 +49,25 @@
   <section class="python-data">
     <h2>Python Data</h2>
     <pre>{JSON.stringify(data.pythonData, null, 2)}</pre>
+  </section>
+{/if}
+
+{#if form?.parsedResults}
+  <section class="results">
+    <h2>Parsed results</h2>
+    <ul>
+      {#each form.parsedResults as r}
+        <li>
+          <strong>{r.name}</strong> — {r.ok ? 'OK' : 'Failed'} (status {r.status})
+          {#if r.body}
+            <details>
+              <summary>Response body</summary>
+              <pre>{JSON.stringify(r.body, null, 2)}</pre>
+            </details>
+          {/if}
+        </li>
+      {/each}
+    </ul>
   </section>
 {/if}
 
