@@ -60,3 +60,36 @@ A SvelteKit application for validating clinical study data against CDISC SDTM an
 Set `SDTM_AI_ADAPTER=vercel` or `SDTM_AI_ADAPTER=cloudflare` during the build step to generate platform-specific output. The default adapter is `@sveltejs/adapter-auto`.
 
 The DuckDB database is stored locally. For production, consider configuring Supabase/Postgres tables to persist dataset metadata.
+
+Render.com doesnt allow additional packages (ie r-base) without docker
+
+railway
+- internal addressing (private network)
+- custom package can be added without createin a docker image
+- no cold start
+- multiservice
+- few datacenter
+- PG,...
+  
+render
+- no package possible (R)
+- langage workflow ( alittle like gg cloud)
+- heroku successor
+- cron jobs PG
+  
+vercel
+- preconfig for platform -> super easy
+- domian immediate integration
+- cold start minimal (benchmark to perfrom)
+- not easy for multiservice
+- best for frontend base incl svkit and next.js
+- more datacenter
+
+cloudflare
+- node
+
+modal
+- python, ai
+
+fly.io
+- single app - confgi more difficult

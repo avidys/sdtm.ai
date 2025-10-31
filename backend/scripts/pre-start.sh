@@ -13,7 +13,9 @@ set -x
 #export R_LIBS="/usr/lib/R"
 
 #which Rscript
-find / -name libR.so 2>/dev/null
+#find / -name libR.so 2>/dev/null
+#/usr/lib/R/lib/libR.so
+#/usr/lib/libR.so
 
 # Let the DB start
 #python app/backend_pre_start.py

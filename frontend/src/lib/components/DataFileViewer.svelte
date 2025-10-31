@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { parseDatasetFile } from '$lib/parsers/browser';
 	import type { ParsedDataset } from '$lib/standards/types';
 	import { SvelteSet } from 'svelte/reactivity';
 
@@ -21,10 +20,18 @@
 	let sortAscending = $state(true);
 	let filterText = $state('');
 	
-	// Load preloaded dataset on mount
+	// Update dataset whenever preloadedDataset changes
 	$effect(() => {
-		if (preloadedDataset && !dataset) {
-			dataset = preloadedDataset;
+		dataset = preloadedDataset;
+		// Reset UI state when dataset changes
+		if (preloadedDataset !== null) {
+			selectedRows.clear();
+			sortColumn = null;
+			sortAscending = true;
+			filterText = '';
+			scrollTop = 0;
+			error = null;
+			loading = false;
 		}
 	});
 	
@@ -109,26 +116,7 @@
 		return stats;
 	});
 	
-	// File upload handler
-	async function handleFileUpload(event: Event) {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-		
-		if (!file) return;
-		
-		loading = true;
-		error = null;
-		dataset = null;
-		selectedRows.clear();
-		
-		try {
-			dataset = await parseDatasetFile(file);
-		} catch (err) {
-			error = err instanceof Error ? err.message : String(err);
-		} finally {
-			loading = false;
-		}
-	}
+	// File upload is now handled externally via props/events
 	
 	// Sort handler
 	function handleSort(column: string) {
@@ -179,33 +167,22 @@
 </script>
 
 <div class="data-file-viewer">
-	<div class="toolbar">
-		{#if !hideFileUpload}
-			<label class="file-upload">
-				<input
-					type="file"
-					accept=".csv,.txt"
-					onchange={handleFileUpload}
-				/>
-				<span class="button">Choose CSV File</span>
-			</label>
-		{/if}
-		
-		{#if dataset}
+	{#if dataset}
+		<div class="toolbar">
 			<div class="dataset-info">
 				<strong>{dataset.name}</strong>
 				<span>({totalRows} rows, {columns.length} columns)</span>
 			</div>
-		{/if}
-		
-		{#if selectedRows.size > 0}
-			<div class="selection-info">
-				<span>{selectedRows.size} selected</span>
-				<button onclick={clearSelection}>Clear</button>
-				<button onclick={exportSelected}>Export Selected</button>
-			</div>
-		{/if}
-	</div>
+			
+			{#if selectedRows.size > 0}
+				<div class="selection-info">
+					<span>{selectedRows.size} selected</span>
+					<button onclick={clearSelection}>Clear</button>
+					<button onclick={exportSelected}>Export Selected</button>
+				</div>
+			{/if}
+		</div>
+	{/if}
 	
 	{#if loading}
 		<div class="status loading">
@@ -290,7 +267,11 @@
 				</table>
 			</div>
 		</div>
-	{:else if !loading && !error}
+	{:else if !loading && !error && hideFileUpload}
+		<div class="empty-state">
+			<p>No dataset loaded. Upload a file using the upload component above.</p>
+		</div>
+	{:else if !loading && !error && !hideFileUpload}
 		<div class="empty-state">
 			<p>Upload a CSV or SAS XPT file to visualize the data</p>
 		</div>
@@ -314,18 +295,6 @@
 		background: rgba(15, 23, 42, 0.4);
 		border-radius: 8px;
 		border: 1px solid rgba(148, 163, 184, 0.25);
-	}
-	
-	.file-upload {
-		position: relative;
-		cursor: pointer;
-	}
-	
-	.file-upload input[type="file"] {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
 	}
 	
 	.button {

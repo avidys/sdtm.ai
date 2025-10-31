@@ -134,14 +134,6 @@
 
 <h1>Dataset viewer</h1>
 
-<div class="toolbar">
-  <button on:click={loadSample}>Load sample (5k rows)</button>
-  <label>
-    Load JSON/CSV file
-    <input type="file" accept=".json,.csv,text/csv,application/json" on:change={handleFileInput} />
-  </label>
-</div>
-
 {#if columns.length}
   <section class="stats">
     <h2>Column statistics</h2>
@@ -204,12 +196,6 @@
 {/if}
 
 <style>
-  .toolbar {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
   .grid {
     position: relative;
     overflow: auto;

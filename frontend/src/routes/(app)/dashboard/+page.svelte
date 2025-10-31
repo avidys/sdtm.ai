@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { parseDatasetFile } from '$lib/parsers/browser';
 	import type { ParsedDataset } from '$lib/standards/types';
 	import type { StoredDataset, StoredComplianceRun } from '$lib/server/database';
 	import type { StandardSummary } from '$lib/standards/types';
@@ -14,6 +13,8 @@
 	import DatasetRawView from '$lib/components/DatasetRawView.svelte';
 	import DatasetViewerModal from '$lib/components/DatasetViewerModal.svelte';
 	import DatasetGridViewModal from '$lib/components/DatasetGridViewModal.svelte';
+	import FileUpload from '$lib/components/FileUpload.svelte';
+	import { parseFileWithParser } from '$lib/utils/fileParser';
 	import { goto } from '$app/navigation';
 	
 	let { data }: { 
@@ -23,6 +24,7 @@
 			standards: StandardSummary[];
 		}
 	} = $props();
+	
 	
 	// Get datasets from store
 	const store = getDatasets();
@@ -42,20 +44,15 @@
 		}
 	});
 	
-	// File upload handler
-	async function handleFileUpload(event: Event) {
-		const input = event.target as HTMLInputElement;
-		const files = input.files;
-		
-		if (!files || files.length === 0) return;
-		
+	// File upload handler using shared component
+	async function handleFileUpload(files: File[], parser: 'pandas' | 'r') {
 		uploading = true;
 		uploadError = null;
 		
 		try {
-			for (const file of Array.from(files)) {
+			for (const file of files) {
 				try {
-					const dataset = await parseDatasetFile(file);
+					const dataset = await parseFileWithParser(file, parser);
 					addDataset(dataset);
 				} catch (err) {
 					console.error(`Failed to parse ${file.name}:`, err);
@@ -64,8 +61,6 @@
 			}
 		} finally {
 			uploading = false;
-			// Clear the input so the same file can be uploaded again
-			input.value = '';
 		}
 	}
 	
@@ -162,26 +157,12 @@
 		</div>
 		
 		{#if showUploadArea || !store.hasDatasets}
-			<label class="file-upload-label">
-				<input
-					type="file"
-					multiple
-					accept=".csv,.txt"
-					onchange={handleFileUpload}
-					disabled={uploading}
-				/>
-				<div class="upload-prompt">
-					<span class="upload-icon">📁</span>
-					<span class="upload-text">
-						{uploading ? 'Parsing files...' : 'Click to upload CSV files or drag and drop'}
-					</span>
-					<span class="upload-hint">Supports CSV and TXT files (browser-compatible)</span>
-				</div>
-			</label>
-			
-			{#if uploadError}
-				<div class="alert alert-error">{uploadError}</div>
-			{/if}
+			<FileUpload 
+				onUpload={handleFileUpload}
+				bind:uploading
+				bind:uploadError
+				bind:showUpload={showUploadArea}
+			/>
 			
 			{#if store.hasDatasets && showUploadArea}
 				<button class="btn-secondary" onclick={toggleUploadArea}>
@@ -420,51 +401,6 @@
 		gap: 0.75rem;
 	}
 	
-	/* File Upload */
-	.file-upload-label {
-		position: relative;
-		display: block;
-		cursor: pointer;
-	}
-	
-	.file-upload-label input[type="file"] {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-	
-	.upload-prompt {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 3rem;
-		border: 2px dashed var(--color-border);
-		border-radius: 0.75rem;
-		background: var(--color-bg-secondary);
-		transition: all 0.2s;
-	}
-	
-	.upload-prompt:hover {
-		border-color: var(--color-primary);
-		background: var(--color-bg-tertiary);
-	}
-	
-	.upload-icon {
-		font-size: 3rem;
-	}
-	
-	.upload-text {
-		font-size: 1.125rem;
-		font-weight: 500;
-		color: var(--color-text);
-	}
-	
-	.upload-hint {
-		font-size: 0.875rem;
-		color: var(--color-text-muted);
-	}
 	
 	/* Datasets List */
 	.datasets-list {
