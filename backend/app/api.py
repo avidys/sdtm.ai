@@ -16,6 +16,13 @@ from .sensor import SensorData
 app = FastAPI()
 sensor = SensorData()
 
+# call R
+from rpy2.robjects import pandas2ri
+import rpy2.robjects as robjects
+#pandas2ri.activate()
+robjects.r('read_xpt <- function(path){haven::read_xpt(path)}')
+read_xpt = robjects.r['read_xpt']
+
 
 # Minimal placeholder parser until a real implementation is provided
 def parse_dataset_file(file: str) -> dict:
@@ -43,7 +50,7 @@ app.add_middleware(
 
 @app.get("/api")
 async def root():
-    return {"message": "Welcome to the Sensor Dashboard API"}
+    return {"message": "Welcome to the SDTM AI API"}
 
 
 @app.get("/api/current")
@@ -78,7 +85,7 @@ def get_data():
     # This is the data that will be sent back to the SvelteKit load function
     return {"message": "Hello from your FastAPI backend!", "value": 123}
 
-@app.post("/api/parse")
+@app.post("/api/parse_upload")
 async def parse_dataset_upload(file: UploadFile = FastAPIFile(...)) -> dict:
     """Accept a file upload (e.g., XPT) and return parsed content.
 
@@ -93,4 +100,11 @@ async def parse_dataset_upload(file: UploadFile = FastAPIFile(...)) -> dict:
     print(f"Parsed dataset: {df.to_dict()}")
     return {"file": file.filename, "status": "parsed", "data": df.to_dict()}
 
-   
+ 
+@app.post("/api/parse")
+async def parse_dataset(file: UploadFile = FastAPIFile(...)) -> dict:
+    print(f"Python API Parsing with R: {file.filename}")
+    data = await file.read()
+    buffer = io.BytesIO(data)
+    #print(read_xpt(buffer))
+    return {"file": file.filename, "status": "parsed", "data": read_xpt(buffer).to_json(format='records')} 

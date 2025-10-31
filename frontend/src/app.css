@@ -1,0 +1,110 @@
+/* Avidys Green Theme System */
+
+:root {
+	/* Light theme - Avidys green palette */
+	--color-primary: #059669; /* emerald-600 */
+	--color-primary-hover: #047857; /* emerald-700 */
+	--color-primary-light: #10b981; /* emerald-500 */
+	--color-secondary: #34d399; /* emerald-400 */
+	
+	--color-bg: #ffffff;
+	--color-bg-secondary: #f0fdf4; /* green-50 */
+	--color-bg-tertiary: #dcfce7; /* green-100 */
+	--color-surface: #ffffff;
+	--color-surface-hover: #f0fdf4;
+	
+	--color-text: #064e3b; /* green-900 */
+	--color-text-secondary: #166534; /* green-800 */
+	--color-text-muted: #4ade80; /* green-400 */
+	
+	--color-border: #bbf7d0; /* green-200 */
+	--color-border-strong: #86efac; /* green-300 */
+	
+	--color-success: #059669;
+	--color-error: #dc2626; /* red-600 */
+	--color-warning: #f59e0b; /* amber-500 */
+	--color-info: #3b82f6; /* blue-500 */
+	
+	--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+[data-theme="dark"] {
+	/* Dark theme - Avidys green palette adapted for dark backgrounds */
+	--color-primary: #10b981; /* emerald-500 */
+	--color-primary-hover: #34d399; /* emerald-400 */
+	--color-primary-light: #059669; /* emerald-600 */
+	--color-secondary: #6ee7b7; /* emerald-300 */
+	
+	--color-bg: #0a0f0a; /* very dark green-tinted */
+	--color-bg-secondary: #111b11; /* dark green-tinted */
+	--color-bg-tertiary: #1a2b1a; /* slightly lighter green-tinted */
+	--color-surface: #0f1b0f;
+	--color-surface-hover: #1a2b1a;
+	
+	--color-text: #d1fae5; /* green-100 */
+	--color-text-secondary: #a7f3d0; /* green-200 */
+	--color-text-muted: #6ee7b7; /* green-300 */
+	
+	--color-border: #166534; /* green-800 */
+	--color-border-strong: #22c55e; /* green-500 */
+	
+	--color-success: #10b981;
+	--color-error: #ef4444; /* red-500 */
+	--color-warning: #fbbf24; /* amber-400 */
+	--color-info: #60a5fa; /* blue-400 */
+	
+	--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	background: var(--color-bg);
+	color: var(--color-text);
+	line-height: 1.6;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+	color: var(--color-primary);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--color-primary-hover);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-border-strong);
+	border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-primary);
+}
+
+/* Selection */
+::selection {
+	background: var(--color-primary);
+	color: white;
+}
+

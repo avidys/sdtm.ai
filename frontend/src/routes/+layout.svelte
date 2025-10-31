@@ -1,39 +1,49 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
+  import { getTheme } from '$lib/stores/theme.svelte';
+  import '../app.css';
+  
   const favicon = '/favicon.svg';
+  const theme = getTheme();
+  
+  // Reactive logo based on theme
+  let logo = $derived(
+    theme.resolvedTheme === 'dark' ? '/AV-green.png' : '/AV-light.png'
+  );
 
-  export let data: PageData;
-//  let { data, children }: LayoutProps = $props();
+  let { data }: { data: PageData } = $props();
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-  <title>SDTM.ai Compliance Portal</title>
+  <title>Avidys SDTM Compliance Portal</title>
 </svelte:head>
-
-<p>This staging environment was deployed from {data.deploymentGitBranch}.</p>
-<!-- {@render children?.()} -->
-
 
 <div class="app-shell">
   <header>
-    <div class="brand">SDTM.ai</div>
+    <div class="brand">
+      <img src={logo} alt="Avidys" class="logo" />
+      <span class="brand-text">SDTM Compliance</span>
+    </div>
     <nav>
       <a href="/">Home</a>
       {#if data.session}
-        <a href="/profile">Profile</a>
         <a href="/dashboard">Dashboard</a>
+        <a href="/profile">Profile</a>
       {/if}
+      <a href="/viewer">Viewer</a>
       <a href="/standards">Standards</a>
     </nav>
-    <div class="session">
+    <div class="actions">
+      <ThemeSwitcher />
       {#if data.session}
-        <span>{data.profile?.email}</span>
+        <span class="user-email">{data.profile?.email}</span>
         <form method="post" action="/logout">
-          <button type="submit">Sign out</button>
+          <button type="submit" class="btn-signout">Sign out</button>
         </form>
       {:else}
-        <a class="cta" href="/login">Sign in</a>
+        <a class="btn-primary" href="/login">Sign in</a>
       {/if}
     </div>
   </header>
@@ -41,7 +51,7 @@
     <slot />
   </main>
   <footer>
-    <p>Built for validating SDTM SDTMIG compliance.</p>
+    <p>Deployed from {data.deploymentGitBranch} - Avidys AI</p>
   </footer>
 </div>
 
@@ -50,57 +60,125 @@
     min-height: 100vh;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 35%, #111827 100%);
-    color: #f8fafc;
+    background: var(--color-bg);
+    color: var(--color-text);
   }
+  
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem 2rem;
-    background-color: rgba(15, 23, 42, 0.9);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
+  
   .brand {
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
+  
+  .logo {
+    height: 32px;
+    width: auto;
+  }
+  
+  .brand-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.02em;
+  }
+  
   nav {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
+    flex: 1;
+    justify-content: center;
   }
+  
   nav a {
-    color: #e2e8f0;
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
   }
+  
   nav a:hover {
-    color: #38bdf8;
+    color: var(--color-primary);
+    background: var(--color-surface-hover);
   }
-  .session {
+  
+  .actions {
     display: flex;
     gap: 1rem;
     align-items: center;
   }
-  .session form button,
-  .cta {
-    background: #38bdf8;
-    color: #0f172a;
+  
+  .user-email {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+  
+  .btn-signout,
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
     border: none;
     border-radius: 9999px;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.25rem;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
   }
+  
+  .btn-signout:hover,
+  .btn-primary:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  
   main {
     padding: 2rem;
-    width: min(1200px, 100%);
+    width: min(1400px, 100%);
     margin: 0 auto;
   }
+  
   footer {
-    padding: 1rem 2rem;
+    padding: 1.5rem 2rem;
     font-size: 0.875rem;
-    color: rgba(226, 232, 240, 0.7);
+    color: var(--color-text-muted);
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    header {
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    nav {
+      order: 3;
+      width: 100%;
+      justify-content: flex-start;
+      gap: 0.5rem;
+    }
+    
+    .user-email {
+      display: none;
+    }
   }
 </style>

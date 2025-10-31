@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@svar-ui/svelte-grid": "^2.3.0"
+  }
+}

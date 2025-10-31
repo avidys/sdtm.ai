@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { STANDARD_CATALOG } from '$lib/standards/catalog';
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.session) {
@@ -7,6 +8,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
   return {
     datasets: locals.database.listDatasets(),
-    runs: locals.database.listRuns()
+    runs: locals.database.listRuns(),
+    standards: STANDARD_CATALOG
   };
 };

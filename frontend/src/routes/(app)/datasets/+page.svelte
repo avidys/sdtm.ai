@@ -11,6 +11,10 @@
 </script>
 
 <h1>Ingest datasets</h1>
+<div class="page-links">
+  <a href="/datasets/view">Open dataset viewer</a>
+  <a href="/datasets/visualize" class="visualize-link">📊 CSV Visualizer (Interactive)</a>
+</div>
 <form method="post" enctype="multipart/form-data" class="upload-form">
   <label>
     Choose standard
@@ -88,6 +92,32 @@
 </section> -->
 
 <style>
+  .page-links {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .page-links a {
+    padding: 0.5rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #38bdf8;
+    transition: all 0.2s;
+  }
+  
+  .page-links a:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.5);
+  }
+  
+  .visualize-link {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(34, 211, 238, 0.15)) !important;
+    border-color: rgba(56, 189, 248, 0.5) !important;
+  }
+
   .upload-form {
     display: grid;
     gap: 1.25rem;

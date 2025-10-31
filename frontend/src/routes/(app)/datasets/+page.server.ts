@@ -184,3 +184,17 @@ export const actions: Actions = {
 //     pythonData: data
 //   };
 // };
+
+
+
+// fetch('/api/endpoint', {
+//   method: 'POST',
+//   headers: {
+//     'Accept': 'application/json',
+//     'Content-Type': 'application/json'
+//   },
+//   body: JSON.stringify({ "eth_addr": "some addr" })
+// })
+// .then(response => response.json())
+// .then(data => console.log(data))
+// .catch(error => console.error(error));
