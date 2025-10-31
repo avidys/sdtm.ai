@@ -3,6 +3,12 @@
 set -e
 set -x
 
+R_HOME="/usr/bin/R"
+export R_HOME
+
+R_LIBS="/usr/lib/R"
+export R_LIBS
+
 # Let the DB start
 #python app/backend_pre_start.py
 
