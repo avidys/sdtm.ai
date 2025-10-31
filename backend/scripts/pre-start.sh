@@ -4,18 +4,15 @@ set -e
 set -x
 
 #./configure --prefix=$HOME/R
-echo "R_HOME: $R_HOME"
-echo "R_LIBS: $R_LIBS"
-echo "R_LIBS_USER: $R_LIBS_USER"
-echo "R_LIBS_SITE: $R_LIBS_SITE"
-echo "R_LIBS_USER: $R_LIBS_USER"
-echo "LD_PRELOAD: $LD_PRELOAD"
-echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+#echo "R_HOME: $R_HOME"
+#echo "R_LIBS: $R_LIBS"
+#echo "LD_PRELOAD: $LD_PRELOAD"
+#echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 
 #export R_HOME="/usr/bin/R"
 #export R_LIBS="/usr/lib/R"
 
-which Rscript
+#which Rscript
 find / -name libR.so 2>/dev/null
 
 # Let the DB start
