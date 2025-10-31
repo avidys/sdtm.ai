@@ -2,16 +2,11 @@
     "$schema": "https://schema.railpack.com",
     "buildAptPackages": ["git","curl","r-base"],
     "packages": {
-      "node": "22.14.0",
       "python": "3.12.10"
     },
     "steps": {
       "install": {
         "commands": ["python -m venv /app/.venv", "pip install -r requirements.txt"]
-      },
-      "build": {
-        "inputs": [{ "step": "install" }],
-        "commands": ["...", "./scripts/pre-start.sh"]
       }
     },
     "deploy": { 
