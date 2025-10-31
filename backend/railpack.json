@@ -1,6 +1,6 @@
 {
     "$schema": "https://schema.railpack.com",
-    "buildAptPackages": ["git","curl","uv","r-base"],
+    "buildAptPackages": ["git","curl","r-base"],
     "packages": {
       "node": "22.14.0",
       "python": "3.12.10"
