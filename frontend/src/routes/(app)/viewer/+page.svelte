@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import DataFileViewer from '$lib/components/DataFileViewer.svelte';
 	import FileUpload from '$lib/components/FileUpload.svelte';
 	import { parseFileWithParser } from '$lib/utils/fileParser';
 	import type { ParsedDataset } from '$lib/standards/types';
 	
+	// Load dataset from sessionStorage on mount
 	let dataset = $state<ParsedDataset | null>(null);
 	let uploading = $state(false);
 	let uploadError = $state<string | null>(null);
@@ -13,6 +15,40 @@
 	let previousParser = $state<'pandas' | 'r' | null>(null);
 	let isParsingDueToParserChange = $state(false);
 	let showParserChangeAck = $state(false);
+	
+	// Load dataset from sessionStorage on mount
+	onMount(() => {
+		try {
+			const stored = sessionStorage.getItem('viewer-dataset');
+			if (stored) {
+				const parsed = JSON.parse(stored);
+				dataset = parsed.dataset;
+				selectedParser = parsed.parser || 'pandas';
+				previousParser = parsed.parser || 'pandas';
+			}
+		} catch (err) {
+			console.error('Failed to load viewer dataset from sessionStorage:', err);
+		}
+	});
+	
+	// Save dataset to sessionStorage whenever it changes
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			if (dataset) {
+				try {
+					sessionStorage.setItem('viewer-dataset', JSON.stringify({
+						dataset,
+						parser: selectedParser
+					}));
+				} catch (err) {
+					console.error('Failed to save viewer dataset to sessionStorage:', err);
+				}
+			} else {
+				// Clear sessionStorage when dataset is cleared
+				sessionStorage.removeItem('viewer-dataset');
+			}
+		}
+	});
 	
 	async function handleFileUpload(files: File[], parser: 'pandas' | 'r') {
 		uploading = true;

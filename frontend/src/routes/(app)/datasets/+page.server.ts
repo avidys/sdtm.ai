@@ -121,37 +121,9 @@ export const actions: Actions = {
       message: `Forwarded ${files.length} file(s) to backend for parsing`,
       parsedResults
     };
-
-
-    try {
-      const standard = await loadStandardDefinition(standardId);
-      const ingested = [] as { datasetId: string; runId: string }[];
-
-      for (const file of files) {
-        const dataset = await parseDatasetFile(file);
-        const stored = await locals.database.upsertDataset(dataset);
-        const run = runComplianceCheck({ standard, dataset });
-        const storedRun = {
-          ...run,
-          datasetId: stored.id,
-          datasetName: stored.name
-        };
-        locals.database.saveRun(storedRun);
-        ingested.push({ datasetId: stored.id, runId: storedRun.id });
-      }
-
-      return {
-        success: true,
-        ingested,
-        message: `Processed ${ingested.length} dataset(s).`
-      };
-    } catch (cause) {
-      console.error('Ingestion failed', cause);
-      const errorMessage = cause instanceof Error ? cause.message : String(cause);
-      return fail(500, { message: `Unable to process the uploaded files: ${errorMessage}` });
-    }
   }
 };
+
 
 
 // src/routes/(app)/datasets/+page.server.ts

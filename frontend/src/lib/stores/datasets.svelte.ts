@@ -32,25 +32,25 @@ if (typeof window !== 'undefined') {
 		const stored = sessionStorage.getItem('uploaded-datasets');
 		if (stored) {
 			const parsed = JSON.parse(stored);
-			const entries = Object.entries(parsed) as [string, ParsedDataset | EnhancedDataset][];
+			const entries = Object.entries(parsed) as [string, DatasetEntry | ParsedDataset][];
 			
 			// Ensure all datasets have sdtmCompliance property
-			const enhancedEntries = entries.map(([name, dataset]) => {
+			const enhancedEntries: [string, DatasetEntry][] = entries.map(([name, dataset]) => {
 				// Check if this is a failed dataset
-				if ('parseStatus' in dataset && dataset.parseStatus === 'failed') {
-					return [name, dataset as FailedDataset] as [string, FailedDataset];
+				if ('parseStatus' in dataset && dataset.parseStatus === 'failed' && 'error' in dataset) {
+					return [name, dataset as FailedDataset];
 				}
 				// Check if dataset already has sdtmCompliance, if not compute it
-				const enhanced: EnhancedDataset = (dataset as EnhancedDataset).sdtmCompliance
+				const enhanced: EnhancedDataset = ('sdtmCompliance' in dataset && (dataset as EnhancedDataset).sdtmCompliance)
 					? (dataset as EnhancedDataset)
 					: {
-						...dataset,
+						...dataset as ParsedDataset,
 						sdtmCompliance: detectSDTMCompliance(dataset.name)
 					};
-				return [name, enhanced] as [string, EnhancedDataset];
+				return [name, enhanced];
 			});
 			
-			datasets = new Map(enhancedEntries);
+			datasets = new Map<string, DatasetEntry>(enhancedEntries);
 		}
 		
 		const storedStandard = sessionStorage.getItem('selected-standard');

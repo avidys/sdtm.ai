@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import type { ComplianceRun } from '$lib/standards/types';
-	import { getDatasets } from '$lib/stores/datasets.svelte';
+	import { getDatasets, type EnhancedDataset } from '$lib/stores/datasets.svelte';
 	import { runComplianceCheck } from '$lib/standards/compliance';
 	import { getStandardSummary } from '$lib/standards/catalog';
 	import * as XLSX from 'xlsx';
@@ -23,13 +23,16 @@
 		}
 
 		try {
-			// Get datasets from store
+			// Get datasets from store and filter out failed datasets
 			const datasetsToCheck = data.datasetNames
 				.map((name) => store.all.get(name))
-				.filter((ds): ds is NonNullable<typeof ds> => ds !== undefined);
+				.filter((ds): ds is EnhancedDataset => 
+					ds !== undefined && 
+					!('parseStatus' in ds && ds.parseStatus === 'failed')
+				);
 
 			if (datasetsToCheck.length === 0) {
-				error = 'No datasets found. Please return to dashboard and upload datasets.';
+				error = 'No valid datasets found. Please return to dashboard and upload datasets.';
 				loading = false;
 				return;
 			}
