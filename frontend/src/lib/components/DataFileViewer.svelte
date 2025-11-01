@@ -270,6 +270,7 @@
 	{:else if !loading && !error && hideFileUpload}
 		<div class="empty-state">
 			<p>No dataset loaded. Upload a file using the upload component above.</p>
+			<p>If there is an error, try a different parser.</p>
 		</div>
 	{:else if !loading && !error && !hideFileUpload}
 		<div class="empty-state">

@@ -156,7 +156,7 @@
   }
   
   footer {
-    padding: 1.5rem 2rem;
+    padding: 0.75rem 2rem;
     font-size: 0.875rem;
     color: var(--color-text-muted);
     background: var(--color-bg-secondary);

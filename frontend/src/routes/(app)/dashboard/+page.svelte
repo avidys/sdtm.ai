@@ -2,13 +2,16 @@
 	import type { ParsedDataset } from '$lib/standards/types';
 	import type { StoredDataset, StoredComplianceRun } from '$lib/server/database';
 	import type { StandardSummary } from '$lib/standards/types';
-	import type { EnhancedDataset } from '$lib/stores/datasets.svelte';
 	import { 
 		getDatasets, 
-		addDataset, 
+		addDataset,
+		addFailedDataset,
 		removeDataset, 
 		clearAllDatasets,
-		setSelectedStandard 
+		setSelectedStandard,
+		type DatasetEntry,
+		type EnhancedDataset,
+		type FailedDataset
 	} from '$lib/stores/datasets.svelte';
 	import DatasetRawView from '$lib/components/DatasetRawView.svelte';
 	import DatasetViewerModal from '$lib/components/DatasetViewerModal.svelte';
@@ -33,6 +36,7 @@
 	let uploading = $state(false);
 	let uploadError = $state<string | null>(null);
 	let showUploadArea = $state(true);
+	let selectedParser = $state<'pandas' | 'r'>('pandas');
 	let viewingRawDataset = $state<EnhancedDataset | null>(null);
 	let viewingDataset = $state<EnhancedDataset | null>(null);
 	let viewingGridDataset = $state<EnhancedDataset | null>(null);
@@ -56,11 +60,27 @@
 					addDataset(dataset);
 				} catch (err) {
 					console.error(`Failed to parse ${file.name}:`, err);
-					uploadError = `Failed to parse ${file.name}: ${err instanceof Error ? err.message : String(err)}`;
+					let errorMessage = err instanceof Error ? err.message : String(err);
+					// Extract just the backend error message if it contains prefixes
+					const parserPrefix = 'parser replied: ';
+					if (errorMessage.toLowerCase().includes(parserPrefix.toLowerCase())) {
+						const prefixIndex = errorMessage.toLowerCase().indexOf(parserPrefix.toLowerCase());
+						errorMessage = errorMessage.substring(prefixIndex + parserPrefix.length).trim();
+					}
+					// Remove "Failed to parse {filename};" prefix if still present
+					const filePrefix = `Failed to parse ${file.name};`;
+					if (errorMessage.startsWith(filePrefix)) {
+						errorMessage = errorMessage.substring(filePrefix.length).trim();
+					}
+					// Add failed dataset to store so it appears in the table
+					// Don't set uploadError here - the table shows individual status for each dataset
+					addFailedDataset(file.name, errorMessage);
 				}
 			}
 		} finally {
 			uploading = false;
+			// Clear any error message since the table shows individual parsing status
+			uploadError = null;
 		}
 	}
 	
@@ -144,16 +164,33 @@
 	<section class="card upload-section">
 		<div class="section-header">
 			<h2>1. Upload Datasets</h2>
-			{#if store.hasDatasets && !showUploadArea}
-				<div class="action-buttons">
-					<button class="btn-primary" onclick={toggleUploadArea}>
-						Add More Datasets
-					</button>
-					<button class="btn-danger" onclick={handleClearAll}>
-						Delete All
-					</button>
-				</div>
-			{/if}
+			<div class="header-actions">
+				{#if showUploadArea || !store.hasDatasets}
+					<div class="parser-selector-header">
+						<label for="parser-select-dashboard">
+							<span>Parser:</span>
+							<select 
+								id="parser-select-dashboard"
+								bind:value={selectedParser}
+								disabled={uploading}
+							>
+								<option value="pandas">Pandas</option>
+								<option value="r">R (haven)</option>
+							</select>
+						</label>
+					</div>
+				{/if}
+				{#if store.hasDatasets && !showUploadArea}
+					<div class="action-buttons">
+						<button class="btn-primary" onclick={toggleUploadArea}>
+							Add More Datasets
+						</button>
+						<button class="btn-danger" onclick={handleClearAll}>
+							Delete All
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 		
 		{#if showUploadArea || !store.hasDatasets}
@@ -162,6 +199,8 @@
 				bind:uploading
 				bind:uploadError
 				bind:showUpload={showUploadArea}
+				hideParser={true}
+				bind:selectedParser
 			/>
 			
 			{#if store.hasDatasets && showUploadArea}
@@ -176,61 +215,78 @@
 				<table class="datasets-table">
 					<thead>
 						<tr>
-							<th>Status</th>
+							<th>SDTM</th>
 							<th>Dataset Name</th>
 							<th class="text-right">Rows</th>
 							<th class="text-right">Columns</th>
-							<th class="text-center">Actions</th>
+							<th class="text-left">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each Array.from(store.all.entries()) as [name, dataset] (name)}
-							<tr>
+						{#each Array.from(store.all.entries()) as [name, entry] (name)}
+							{@const isFailed = 'parseStatus' in entry && entry.parseStatus === 'failed'}
+							{@const dataset = isFailed ? null : entry as EnhancedDataset}
+							{@const failed = isFailed ? entry as FailedDataset : null}
+							<tr class:failed-row={isFailed}>
 								<td class="status-cell">
-									<span 
-										class="status-icon" 
-										title={dataset.sdtmCompliance.isCompliant 
-											? `SDTM ${dataset.sdtmCompliance.type}: ${dataset.sdtmCompliance.domain}`
-											: 'Not SDTM compliant'}
-									>
-										{dataset.sdtmCompliance.icon}
-									</span>
+									{#if isFailed}
+										<span class="status-icon status-error" title="Parsing failed">
+											✗
+										</span>
+									{:else if dataset}
+										<span 
+											class="status-icon" 
+											title={dataset.sdtmCompliance.isCompliant 
+												? `SDTM ${dataset.sdtmCompliance.type}: ${dataset.sdtmCompliance.domain}`
+												: 'Not recognized as SDTM'}
+										>
+											{dataset.sdtmCompliance.icon}
+										</span>
+									{/if}
 								</td>
 								<td class="dataset-name">
-									<strong>{dataset.name}</strong>
-									{#if dataset.sdtmCompliance.domain}
+									<strong>{name}</strong>
+									{#if !isFailed && dataset?.sdtmCompliance.domain}
 										<span class="domain-tag">{dataset.sdtmCompliance.domain}</span>
 									{/if}
 								</td>
-								<td class="text-right">{dataset.rowCount.toLocaleString()}</td>
-								<td class="text-right">{Object.keys(dataset.columns).length}</td>
+								{#if isFailed}
+									<td class="text-right">—</td>
+									<td class="text-right">—</td>
+								{:else if dataset}
+									<td class="text-right">{dataset.rowCount.toLocaleString()}</td>
+									<td class="text-right">{Object.keys(dataset.columns).length}</td>
+								{/if}
 								<td class="actions-cell">
 									<button 
 										class="btn-table btn-view" 
-										onclick={() => openInViewer(dataset)}
-										title="View dataset in modal"
+										onclick={() => !isFailed && dataset && openInViewer(dataset)}
+										disabled={isFailed}
+										title={isFailed ? 'View not available (parsing failed)' : 'View dataset in modal'}
 									>
 										View
 									</button>
 									<button 
 										class="btn-table btn-grid" 
-										onclick={() => openGridViewer(dataset)}
-										title="View dataset in grid"
+										onclick={() => !isFailed && dataset && openGridViewer(dataset)}
+										disabled={isFailed}
+										title={isFailed ? 'Grid view not available (parsing failed)' : 'View dataset in grid'}
 									>
 										Grid
 									</button>
 									<button 
 										class="btn-table btn-raw" 
-										onclick={() => viewRaw(dataset)}
-										title="View raw data"
+										onclick={() => !isFailed && dataset && viewRaw(dataset)}
+										disabled={isFailed}
+										title={isFailed ? 'Raw view not available (parsing failed)' : 'View raw data'}
 									>
 										Raw
 									</button>
 									<button 
 										class="btn-table btn-check" 
 										onclick={() => runComplianceCheck(name)}
-										disabled={!store.selectedStandard}
-										title="Check compliance"
+										disabled={isFailed || !store.selectedStandard}
+										title={isFailed ? 'Check not available (parsing failed)' : 'Check compliance'}
 									>
 										Check
 									</button>
@@ -241,6 +297,15 @@
 									>
 										Remove
 									</button>
+									{#if isFailed && failed}
+										<span class="parse-status parse-status-error" title={failed.error}>
+											fail: {failed.error}
+										</span>
+									{:else}
+										<span class="parse-status parse-status-success">
+											Success
+										</span>
+									{/if}
 								</td>
 							</tr>
 						{/each}
@@ -396,6 +461,46 @@
 		color: var(--color-text);
 	}
 	
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	
+	.parser-selector-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		background: transparent;
+		border: none;
+		border-radius: 0.5rem;
+	}
+	
+	.parser-selector-header label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 500;
+		color: var(--color-text);
+		font-size: 0.9rem;
+	}
+	
+	.parser-selector-header select {
+		padding: 0.4rem 0.6rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.25rem;
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+	
+	.parser-selector-header select:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
 	.action-buttons {
 		display: flex;
 		gap: 0.75rem;
@@ -531,6 +636,45 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
+		align-items: flex-start;
+	}
+	
+	.failed-row {
+		opacity: 0.7;
+	}
+	
+	.failed-row td {
+		color: var(--color-text-muted);
+	}
+	
+	.status-error {
+		color: var(--color-error);
+		font-weight: 600;
+	}
+	
+	.parse-status {
+		padding: 0.4rem 0.75rem;
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		display: inline-flex;
+		align-items: center;
+		margin-left: 0.5rem;
+	}
+	
+	.parse-status-success {
+		color: #10b981;
+		background: rgba(16, 185, 129, 0.1);
+		white-space: nowrap;
+	}
+	
+	.parse-status-error {
+		color: var(--color-error);
+		background: rgba(239, 68, 68, 0.1);
+		max-width: 300px;
+		word-wrap: break-word;
+		white-space: normal;
+		line-height: 1.3;
 	}
 	
 	.btn-table {
@@ -671,6 +815,66 @@
 	}
 	
 	/* Table */
+	.datasets-table-wrapper {
+		overflow-x: auto;
+		margin-top: 1rem;
+	}
+	
+	.datasets-table {
+		width: 100%;
+		border-collapse: separate;
+		border-spacing: 0;
+	}
+	
+	.datasets-table th,
+	.datasets-table td {
+		padding: 0.5rem 1.25rem;
+		border-bottom: 1px solid var(--color-border);
+	}
+	
+	/* First 4 columns (SDTM, Dataset Name, Rows, Columns) - reduced gap */
+	.datasets-table th:nth-child(-n+4),
+	.datasets-table td:nth-child(-n+4) {
+		padding-right: 0.5rem;
+	}
+	
+	/* Actions column - keep normal spacing */
+	.datasets-table th:nth-child(5),
+	.datasets-table td:nth-child(5) {
+		padding-right: 1rem;
+	}
+	
+	/* Status column (last) - no extra padding on right */
+	.datasets-table th:last-child,
+	.datasets-table td:last-child {
+		padding-right: 1.25rem;
+	}
+	
+	/* All columns except last have spacing */
+	.datasets-table th:not(:last-child),
+	.datasets-table td:not(:last-child) {
+		border-right: 1px solid transparent;
+	}
+	
+	.datasets-table th {
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		background: var(--color-bg-secondary);
+		text-align: left;
+	}
+	
+	.datasets-table tbody tr:hover {
+		background: var(--color-bg-secondary);
+	}
+	
+	.datasets-table .text-right {
+		text-align: right;
+	}
+	
+	.datasets-table .text-center {
+		text-align: center;
+	}
+	
 	.runs-table-wrapper {
 		overflow-x: auto;
 	}

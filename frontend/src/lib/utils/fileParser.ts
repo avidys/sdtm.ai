@@ -62,8 +62,15 @@ async function parseServerSideFile(
 			errorMessage = errorMessage.substring(filePrefix.length).trim();
 		}
 		
-		// Format the final error message
-		throw new Error(`Failed to parse ${file.name}; parser replied: ${errorMessage}`);
+		// Remove "parser replied:" prefix if present
+		const parserPrefix = 'parser replied: ';
+		if (errorMessage.toLowerCase().includes(parserPrefix.toLowerCase())) {
+			const prefixIndex = errorMessage.toLowerCase().indexOf(parserPrefix.toLowerCase());
+			errorMessage = errorMessage.substring(prefixIndex + parserPrefix.length).trim();
+		}
+		
+		// Format the final error message - only include the backend error message
+		throw new Error(errorMessage);
 	}
 	
 	const result = await response.json();

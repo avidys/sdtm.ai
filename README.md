@@ -93,3 +93,18 @@ modal
 
 fly.io
 - single app - confgi more difficult
+
+
+
+the one that failed should  have the buttong disabled (except remove); 
+
+when login fail, message
+login google...
+view password
+one step setup with email + human check
+
+
+on dashboard, upload datasets, change "dataset name" to "Dataset"; remove the status at the begining
+
+put some space between the 3 first columns and align parse to success/fail status on the left;
+if parsing succeded, rows and cols should be displayed and the buttons enabled

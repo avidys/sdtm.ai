@@ -6,7 +6,8 @@
 		showUpload = $bindable(true),
 		onShowFeatures,
 		hideParser = false,
-		selectedParser = $bindable('pandas' as 'pandas' | 'r')
+		selectedParser = $bindable('pandas' as 'pandas' | 'r'),
+		multiple = true
 	}: {
 		onUpload: (files: File[], parser: 'pandas' | 'r') => Promise<void>;
 		uploading?: boolean;
@@ -15,6 +16,7 @@
 		onShowFeatures?: () => void;
 		hideParser?: boolean;
 		selectedParser?: 'pandas' | 'r';
+		multiple?: boolean;
 	} = $props();
 	let dragOver = $state(false);
 	let selectedFiles = $state<File[]>([]);
@@ -52,8 +54,10 @@
 		if (!files || files.length === 0) return;
 		
 		const fileArray = Array.from(files);
-		selectedFiles = fileArray;
-		await processFiles(fileArray);
+		// If multiple is false, only take the first file
+		const filesToProcess = multiple ? fileArray : [fileArray[0]];
+		selectedFiles = filesToProcess;
+		await processFiles(filesToProcess);
 		// Reset input to allow selecting the same file again
 		input.value = '';
 	}
@@ -111,8 +115,10 @@
 		
 		const files = Array.from(event.dataTransfer?.files || []);
 		if (files.length > 0) {
-			selectedFiles = files;
-			await processFiles(files);
+			// If multiple is false, only take the first file
+			const filesToProcess = multiple ? files : [files[0]];
+			selectedFiles = filesToProcess;
+			await processFiles(filesToProcess);
 		}
 	}
 	
@@ -156,7 +162,7 @@
 				>
 					<input
 						type="file"
-						multiple
+						multiple={multiple}
 						accept={acceptString}
 						onchange={handleFileInput}
 						onclick={(e) => {
@@ -178,7 +184,9 @@
 						{:else}
 							<span class="upload-icon">📁</span>
 							<span class="upload-text">
-								{uploading ? 'Parsing files...' : 'Click to upload files or drag and drop'}
+								{uploading 
+									? (multiple ? 'Parsing files...' : 'Parsing file...')
+									: (multiple ? 'Click to upload files or drag and drop' : 'Click to upload a file or drag and drop')}
 							</span>
 							<span class="upload-hint">{formatHint}</span>
 						{/if}

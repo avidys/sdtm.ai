@@ -14,8 +14,16 @@ export interface EnhancedDataset extends ParsedDataset {
 	};
 }
 
+export interface FailedDataset {
+	name: string;
+	error: string;
+	parseStatus: 'failed';
+}
+
+export type DatasetEntry = EnhancedDataset | FailedDataset;
+
 // Module-level state
-let datasets = $state<Map<string, EnhancedDataset>>(new Map());
+let datasets = $state<Map<string, DatasetEntry>>(new Map());
 let selectedStandard = $state<string>('');
 
 // Load from sessionStorage on initialization
@@ -28,6 +36,10 @@ if (typeof window !== 'undefined') {
 			
 			// Ensure all datasets have sdtmCompliance property
 			const enhancedEntries = entries.map(([name, dataset]) => {
+				// Check if this is a failed dataset
+				if ('parseStatus' in dataset && dataset.parseStatus === 'failed') {
+					return [name, dataset as FailedDataset] as [string, FailedDataset];
+				}
 				// Check if dataset already has sdtmCompliance, if not compute it
 				const enhanced: EnhancedDataset = (dataset as EnhancedDataset).sdtmCompliance
 					? (dataset as EnhancedDataset)
@@ -75,6 +87,17 @@ export function addDataset(dataset: ParsedDataset) {
 	saveToStorage();
 }
 
+export function addFailedDataset(name: string, error: string) {
+	const failed: FailedDataset = {
+		name,
+		error,
+		parseStatus: 'failed'
+	};
+	datasets.set(name, failed);
+	datasets = new Map(datasets); // Trigger reactivity
+	saveToStorage();
+}
+
 export function removeDataset(name: string) {
 	datasets.delete(name);
 	datasets = new Map(datasets); // Trigger reactivity
@@ -105,7 +128,11 @@ export function getDatasets() {
 			return datasets.size > 0;
 		},
 		get canRunCompliance() {
-			return datasets.size > 0 && selectedStandard !== '';
+			// Only count successful datasets for compliance
+			const successfulCount = Array.from(datasets.values()).filter(
+				entry => !('parseStatus' in entry && entry.parseStatus === 'failed')
+			).length;
+			return successfulCount > 0 && selectedStandard !== '';
 		}
 	};
 }

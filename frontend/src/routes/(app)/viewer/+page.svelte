@@ -32,6 +32,7 @@
 			}
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : String(err);
+			dataset = null; // Clear dataset on error to show empty state
 			// Keep currentFile even on error so we can retry with a different parser
 			// Set previousParser to track which parser was attempted (even if it failed)
 			previousParser = selectedParser;
@@ -63,6 +64,7 @@
 			(async () => {
 				uploading = true;
 				uploadError = null;
+				dataset = null; // Clear dataset while re-parsing
 				try {
 					dataset = await parseFileWithParser(currentFile!, parser);
 					// Show acknowledgment message after successful re-parsing
@@ -72,6 +74,7 @@
 					}, 2000); // Auto-hide after 2 seconds
 				} catch (err) {
 					uploadError = err instanceof Error ? err.message : String(err);
+					dataset = null; // Clear dataset on error to show empty state
 				} finally {
 					uploading = false;
 					isParsingDueToParserChange = false;
@@ -125,6 +128,7 @@
 		showUpload={true}
 		hideParser={true}
 		bind:selectedParser
+		multiple={false}
 	/>
 	
 	{#if showParserChangeAck && currentFile}
