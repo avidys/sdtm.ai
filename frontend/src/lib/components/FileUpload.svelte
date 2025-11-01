@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	
 	let { 
 		onUpload,
 		uploading = $bindable(false),
@@ -20,6 +22,29 @@
 	} = $props();
 	let dragOver = $state(false);
 	let selectedFiles = $state<File[]>([]);
+	
+	// Restore compact state from sessionStorage on mount (for viewer page)
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			try {
+				const stored = sessionStorage.getItem('viewer-dataset');
+				if (stored) {
+					// Dataset exists, create a dummy file entry to maintain compact state
+					const parsed = JSON.parse(stored);
+					if (parsed.dataset && parsed.dataset.name) {
+						// Create a File-like object placeholder to maintain compact state
+						// We'll use a DataTransfer object to create a File
+						const dataTransfer = new DataTransfer();
+						const file = new File([''], parsed.dataset.name, { type: 'application/octet-stream' });
+						dataTransfer.items.add(file);
+						selectedFiles = [file];
+					}
+				}
+			} catch (err) {
+				// Ignore errors
+			}
+		}
+	});
 	
 	// Supported file formats based on pandas and R capabilities
 	const SUPPORTED_FORMATS = {

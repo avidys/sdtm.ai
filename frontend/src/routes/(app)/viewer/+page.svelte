@@ -25,6 +25,14 @@
 				dataset = parsed.dataset;
 				selectedParser = parsed.parser || 'pandas';
 				previousParser = parsed.parser || 'pandas';
+				// Set currentFile to maintain file reference for re-parsing
+				if (parsed.dataset && parsed.dataset.name) {
+					// Create a File-like object to maintain reference
+					const dataTransfer = new DataTransfer();
+					const file = new File([''], parsed.dataset.name, { type: 'application/octet-stream' });
+					dataTransfer.items.add(file);
+					currentFile = file;
+				}
 			}
 		} catch (err) {
 			console.error('Failed to load viewer dataset from sessionStorage:', err);
@@ -206,20 +214,20 @@
 	.page-container {
 		max-width: 1400px;
 		margin: 0 auto;
-		padding: 2rem;
+		padding: 1rem;
 	}
 	
 	.page-container > :global(.file-upload-container) {
 		max-width: 100%;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 	}
 	
 	.data-viewer-wrapper {
-		margin-top: 2rem;
+		margin-top: 1rem;
 	}
 	
 	.page-header {
-		margin-bottom: 1.5rem;
+		margin-bottom: .5rem;
 	}
 	
 	.header-content {

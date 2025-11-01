@@ -174,13 +174,21 @@
 				<span>({totalRows} rows, {columns.length} columns)</span>
 			</div>
 			
-			{#if selectedRows.size > 0}
-				<div class="selection-info">
-					<span>{selectedRows.size} selected</span>
-					<button onclick={clearSelection}>Clear</button>
-					<button onclick={exportSelected}>Export Selected</button>
-				</div>
-			{/if}
+			<div class="toolbar-right">
+				<input
+					type="search"
+					class="filter-input"
+					placeholder="Filter data..."
+					bind:value={filterText}
+				/>
+				{#if selectedRows.size > 0}
+					<div class="selection-info">
+						<span>{selectedRows.size} selected</span>
+						<button onclick={clearSelection}>Clear</button>
+						<button onclick={exportSelected}>Export Selected</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 	{/if}
 	
@@ -198,14 +206,6 @@
 	{/if}
 	
 	{#if dataset && !loading}
-		<div class="controls">
-			<input
-				type="search"
-				placeholder="Filter data..."
-				bind:value={filterText}
-			/>
-		</div>
-		
 		<!-- Column Statistics -->
 		<details class="stats-section">
 			<summary>Column Statistics</summary>
@@ -296,6 +296,7 @@
 		background: var(--color-surface);
 		border-radius: 8px;
 		border: 1px solid var(--color-border);
+		justify-content: space-between;
 	}
 	
 	.button {
@@ -320,6 +321,7 @@
 		gap: 0.5rem;
 		align-items: center;
 		color: var(--color-text);
+		flex: 0 0 auto;
 	}
 	
 	.dataset-info span {
@@ -327,11 +329,38 @@
 		font-size: 0.9rem;
 	}
 	
+	.toolbar-right {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-left: auto;
+		flex: 0 0 auto;
+	}
+	
+	.filter-input {
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.375rem;
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 0.875rem;
+		min-width: 200px;
+	}
+	
+	.filter-input:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+	}
+	
+	.filter-input::placeholder {
+		color: var(--color-text-muted);
+	}
+	
 	.selection-info {
 		display: flex;
 		gap: 0.5rem;
 		align-items: center;
-		margin-left: auto;
 		color: var(--color-primary);
 	}
 	
@@ -597,8 +626,9 @@
 			padding: 0.5rem;
 		}
 		
-		.controls {
-			padding: 0 0.5rem;
+		.filter-input {
+			min-width: 120px;
+			font-size: 16px; /* Prevents zoom on iOS */
 		}
 		
 		.data-table th,
