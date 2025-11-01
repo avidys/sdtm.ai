@@ -588,5 +588,92 @@
 	.alert p {
 		margin: 0 0 1rem 0;
 	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.page-header h1 {
+			font-size: 1.75rem;
+		}
+		
+		.summary-cards {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		
+		.card {
+			padding: 1.25rem;
+		}
+		
+		.card h3 {
+			font-size: 1rem;
+		}
+		
+		.card-value {
+			font-size: 2rem;
+		}
+		
+		.results-section {
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+		
+		.results-table {
+			min-width: 700px;
+		}
+		
+		.results-table th,
+		.results-table td {
+			padding: 0.5rem 0.5rem;
+			font-size: 0.8rem;
+		}
+		
+		.dataset-findings h3 {
+			font-size: 1.1rem;
+		}
+		
+		.finding {
+			padding: 0.75rem;
+		}
+		
+		.finding-header {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+		
+		.btn-primary {
+			width: 100%;
+			min-height: 44px;
+			padding: 0.75rem 1rem;
+		}
+		
+		.alert {
+			padding: 1rem;
+			margin: 0 1rem;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.page-header h1 {
+			font-size: 1.5rem;
+		}
+		
+		.card {
+			padding: 1rem;
+		}
+		
+		.card-value {
+			font-size: 1.75rem;
+		}
+		
+		.results-table {
+			min-width: 600px;
+		}
+		
+		.results-table th,
+		.results-table td {
+			padding: 0.4rem 0.35rem;
+			font-size: 0.75rem;
+		}
+	}
 </style>
 

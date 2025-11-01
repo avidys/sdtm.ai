@@ -7,6 +7,8 @@ export type Theme = 'light' | 'dark' | 'auto';
 
 let current = $state<Theme>('auto');
 let resolvedTheme = $state<'light' | 'dark'>('dark');
+let mediaQuery: MediaQueryList | null = null;
+let mediaQueryListener: ((e: MediaQueryListEvent) => void) | null = null;
 
 function updateResolvedTheme() {
 	if (typeof window === 'undefined') return;
@@ -61,10 +63,24 @@ if (typeof window !== 'undefined') {
 	// Initialize resolved theme
 	updateResolvedTheme();
 	
-	// Listen for system theme changes
-	const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-	mediaQuery.addEventListener('change', () => {
-		updateResolvedTheme();
+	// Listen for system theme changes - this will update when system preference changes
+	mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+	mediaQueryListener = () => {
+		if (current === 'auto') {
+			updateResolvedTheme();
+		}
+	};
+	mediaQuery.addEventListener('change', mediaQueryListener);
+	
+	// Also listen for storage changes (in case theme is changed in another tab)
+	window.addEventListener('storage', (e) => {
+		if (e.key === 'theme') {
+			const newTheme = e.newValue as Theme;
+			if (newTheme && ['light', 'dark', 'auto'].includes(newTheme)) {
+				current = newTheme;
+				updateResolvedTheme();
+			}
+		}
 	});
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  // @ts-ignore - chart.js/auto types are available but TypeScript may not resolve them
   import Chart from 'chart.js/auto';
 
   export let value: number;

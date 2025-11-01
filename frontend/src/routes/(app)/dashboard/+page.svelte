@@ -40,6 +40,7 @@
 	let viewingRawDataset = $state<EnhancedDataset | null>(null);
 	let viewingDataset = $state<EnhancedDataset | null>(null);
 	let viewingGridDataset = $state<EnhancedDataset | null>(null);
+	let openDropdown = $state<string | null>(null);
 	
 	// Auto-hide upload area when datasets are loaded
 	$effect(() => {
@@ -88,6 +89,32 @@
 	function handleRemoveDataset(name: string) {
 		removeDataset(name);
 	}
+	
+	// Toggle dropdown
+	function toggleDropdown(name: string, event: MouseEvent) {
+		event.stopPropagation();
+		event.preventDefault();
+		openDropdown = openDropdown === name ? null : name;
+	}
+	
+	// Close dropdown
+	function closeDropdown() {
+		openDropdown = null;
+	}
+	
+	// Close dropdown when clicking outside
+	$effect(() => {
+		if (typeof window !== 'undefined' && openDropdown) {
+			const handleClick = (e: MouseEvent) => {
+				const target = e.target as HTMLElement;
+				if (!target.closest(`[data-dropdown="${openDropdown}"]`)) {
+					closeDropdown();
+				}
+			};
+			window.addEventListener('click', handleClick);
+			return () => window.removeEventListener('click', handleClick);
+		}
+	});
 	
 	// Open dataset in viewer (modal)
 	function openInViewer(dataset: EnhancedDataset) {
@@ -258,45 +285,115 @@
 									<td class="text-right">{Object.keys(dataset.columns).length}</td>
 								{/if}
 								<td class="actions-cell">
-									<button 
-										class="btn-table btn-view" 
-										onclick={() => !isFailed && dataset && openInViewer(dataset)}
-										disabled={isFailed}
-										title={isFailed ? 'View not available (parsing failed)' : 'View dataset in modal'}
-									>
-										View
-									</button>
-									<button 
-										class="btn-table btn-grid" 
-										onclick={() => !isFailed && dataset && openGridViewer(dataset)}
-										disabled={isFailed}
-										title={isFailed ? 'Grid view not available (parsing failed)' : 'View dataset in grid'}
-									>
-										Grid
-									</button>
-									<button 
-										class="btn-table btn-raw" 
-										onclick={() => !isFailed && dataset && viewRaw(dataset)}
-										disabled={isFailed}
-										title={isFailed ? 'Raw view not available (parsing failed)' : 'View raw data'}
-									>
-										Raw
-									</button>
-									<button 
-										class="btn-table btn-check" 
-										onclick={() => runComplianceCheck(name)}
-										disabled={isFailed || !store.selectedStandard}
-										title={isFailed ? 'Check not available (parsing failed)' : 'Check compliance'}
-									>
-										Check
-									</button>
-									<button 
-										class="btn-table btn-remove" 
-										onclick={() => handleRemoveDataset(name)}
-										title="Remove dataset"
-									>
-										Remove
-									</button>
+									<!-- Desktop buttons -->
+									<div class="actions-buttons-desktop">
+										<button 
+											class="btn-table btn-view" 
+											onclick={() => !isFailed && dataset && openInViewer(dataset)}
+											disabled={isFailed}
+											title={isFailed ? 'View not available (parsing failed)' : 'View dataset in modal'}
+										>
+											View
+										</button>
+										<button 
+											class="btn-table btn-grid" 
+											onclick={() => !isFailed && dataset && openGridViewer(dataset)}
+											disabled={isFailed}
+											title={isFailed ? 'Grid view not available (parsing failed)' : 'View dataset in grid'}
+										>
+											Grid
+										</button>
+										<button 
+											class="btn-table btn-raw" 
+											onclick={() => !isFailed && dataset && viewRaw(dataset)}
+											disabled={isFailed}
+											title={isFailed ? 'Raw view not available (parsing failed)' : 'View raw data'}
+										>
+											Raw
+										</button>
+										<button 
+											class="btn-table btn-check" 
+											onclick={() => runComplianceCheck(name)}
+											disabled={isFailed || !store.selectedStandard}
+											title={isFailed ? 'Check not available (parsing failed)' : 'Check compliance'}
+										>
+											Check
+										</button>
+										<button 
+											class="btn-table btn-remove" 
+											onclick={() => handleRemoveDataset(name)}
+											title="Remove dataset"
+										>
+											Remove
+										</button>
+									</div>
+									
+									<!-- Mobile dropdown -->
+									<div class="actions-dropdown-mobile" data-dropdown={name}>
+										<button 
+											class="btn-dropdown-toggle"
+											onclick={(e) => toggleDropdown(name, e)}
+											aria-expanded={openDropdown === name}
+											aria-label="Actions menu"
+										>
+											Actions
+											<span class="dropdown-arrow">▼</span>
+										</button>
+										{#if openDropdown === name}
+											<div class="dropdown-menu">
+												<button 
+													class="dropdown-item"
+													onclick={() => {
+														if (!isFailed && dataset) openInViewer(dataset);
+														closeDropdown();
+													}}
+													disabled={isFailed}
+												>
+													View
+												</button>
+												<button 
+													class="dropdown-item"
+													onclick={() => {
+														if (!isFailed && dataset) openGridViewer(dataset);
+														closeDropdown();
+													}}
+													disabled={isFailed}
+												>
+													Grid
+												</button>
+												<button 
+													class="dropdown-item"
+													onclick={() => {
+														if (!isFailed && dataset) viewRaw(dataset);
+														closeDropdown();
+													}}
+													disabled={isFailed}
+												>
+													Raw
+												</button>
+												<button 
+													class="dropdown-item"
+													onclick={() => {
+														runComplianceCheck(name);
+														closeDropdown();
+													}}
+													disabled={isFailed || !store.selectedStandard}
+												>
+													Check
+												</button>
+												<button 
+													class="dropdown-item dropdown-item-danger"
+													onclick={() => {
+														handleRemoveDataset(name);
+														closeDropdown();
+													}}
+												>
+													Remove
+												</button>
+											</div>
+										{/if}
+									</div>
+									
 									{#if isFailed && failed}
 										<span class="parse-status parse-status-error" title={failed.error}>
 											fail: {failed.error}
@@ -311,6 +408,125 @@
 						{/each}
 					</tbody>
 				</table>
+			</div>
+			
+			<!-- Mobile Card View -->
+			<div class="datasets-mobile">
+				{#each Array.from(store.all.entries()) as [name, entry] (name)}
+					{@const isFailed = 'parseStatus' in entry && entry.parseStatus === 'failed'}
+					{@const dataset = isFailed ? null : entry as EnhancedDataset}
+					{@const failed = isFailed ? entry as FailedDataset : null}
+					<div class="dataset-card-mobile" class:failed-card={isFailed}>
+						<div class="dataset-card-row">
+							<div class="dataset-card-info">
+								{#if isFailed}
+									<span class="status-icon status-error" title="Parsing failed">
+										✗
+									</span>
+								{:else if dataset}
+									<span 
+										class="status-icon" 
+										title={dataset.sdtmCompliance.isCompliant 
+											? `SDTM ${dataset.sdtmCompliance.type}: ${dataset.sdtmCompliance.domain}`
+											: 'Not recognized as SDTM'}
+									>
+										{dataset.sdtmCompliance.icon}
+									</span>
+								{/if}
+								<div class="dataset-card-name">
+									<strong>{name}</strong>
+									{#if !isFailed && dataset?.sdtmCompliance.domain}
+										<span class="domain-tag">{dataset.sdtmCompliance.domain}</span>
+									{/if}
+								</div>
+								<div class="dataset-card-stats">
+									{#if isFailed}
+										<span class="stat-abbr">—/—</span>
+									{:else if dataset}
+										<span class="stat-abbr">
+											{dataset.rowCount.toLocaleString()}/{Object.keys(dataset.columns).length}
+										</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+						<div class="dataset-card-actions">
+							<div class="actions-dropdown-mobile" data-dropdown={name}>
+								<button 
+									class="btn-dropdown-toggle"
+									onclick={(e) => toggleDropdown(name, e)}
+									aria-expanded={openDropdown === name}
+									aria-label="Actions menu"
+								>
+									Actions
+									<span class="dropdown-arrow">▼</span>
+								</button>
+								{#if openDropdown === name}
+									<div class="dropdown-menu">
+										<button 
+											class="dropdown-item"
+											onclick={() => {
+												if (!isFailed && dataset) openInViewer(dataset);
+												closeDropdown();
+											}}
+											disabled={isFailed}
+										>
+											View
+										</button>
+										<button 
+											class="dropdown-item"
+											onclick={() => {
+												if (!isFailed && dataset) openGridViewer(dataset);
+												closeDropdown();
+											}}
+											disabled={isFailed}
+										>
+											Grid
+										</button>
+										<button 
+											class="dropdown-item"
+											onclick={() => {
+												if (!isFailed && dataset) viewRaw(dataset);
+												closeDropdown();
+											}}
+											disabled={isFailed}
+										>
+											Raw
+										</button>
+										<button 
+											class="dropdown-item"
+											onclick={() => {
+												runComplianceCheck(name);
+												closeDropdown();
+											}}
+											disabled={isFailed || !store.selectedStandard}
+										>
+											Check
+										</button>
+										<button 
+											class="dropdown-item dropdown-item-danger"
+											onclick={() => {
+												handleRemoveDataset(name);
+												closeDropdown();
+											}}
+										>
+											Remove
+										</button>
+									</div>
+								{/if}
+							</div>
+							{#if isFailed && failed}
+								<span class="parse-status parse-status-error" title={failed.error}>
+									fail: {failed.error}
+								</span>
+							{:else}
+								<span class="parse-status parse-status-success">
+									Success
+								</span>
+							{/if}
+						</div>
+					</div>
+				{/each}
 			</div>
 		{/if}
 	</section>
@@ -446,6 +662,9 @@
 		border-radius: 1rem;
 		padding: 2rem;
 		box-shadow: var(--shadow-md);
+		width: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 	
 	.section-header {
@@ -504,6 +723,7 @@
 	.action-buttons {
 		display: flex;
 		gap: 0.75rem;
+		align-items: center;
 	}
 	
 	
@@ -637,6 +857,19 @@
 		gap: 0.5rem;
 		flex-wrap: wrap;
 		align-items: flex-start;
+		position: relative;
+	}
+	
+	.actions-buttons-desktop {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	
+	.actions-dropdown-mobile {
+		display: none;
+		position: relative;
+		width: 100%;
 	}
 	
 	.failed-row {
@@ -682,11 +915,11 @@
 		border: 1px solid var(--color-border);
 		border-radius: 0.375rem;
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
 		background: var(--color-bg-secondary);
-		color: var(--color-text);
+		color: var(--color-text-secondary);
 	}
 	
 	.btn-table:hover:not(:disabled) {
@@ -743,6 +976,171 @@
 	
 	.btn-remove:hover {
 		background: rgba(239, 68, 68, 0.1);
+	}
+	
+	/* Mobile Dropdown */
+	.btn-dropdown-toggle {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		background: var(--color-bg-secondary);
+		color: var(--color-text);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.btn-dropdown-toggle:hover {
+		background: var(--color-surface-hover);
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.dropdown-arrow {
+		font-size: 0.6rem;
+		transition: transform 0.2s;
+	}
+	
+	.btn-dropdown-toggle[aria-expanded="true"] .dropdown-arrow {
+		transform: rotate(180deg);
+	}
+	
+	.dropdown-menu {
+		position: absolute;
+		top: calc(100% + 0.5rem);
+		right: 0;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		box-shadow: var(--shadow-lg);
+		min-width: 140px;
+		z-index: 1000;
+		overflow: hidden;
+	}
+	
+	/* Mobile Card Layout */
+	.dataset-card-mobile {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		padding: 1rem;
+		margin-bottom: 0.5rem;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	
+	.dataset-card-mobile.failed-card {
+		opacity: 0.7;
+	}
+	
+	.dataset-card-row {
+		margin-bottom: 0.5rem;
+	}
+	
+	.dataset-card-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: nowrap;
+		width: 100%;
+	}
+	
+	.dataset-card-name {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	
+	.dataset-card-name strong {
+		font-size: 1rem;
+		color: var(--color-text);
+		word-break: break-word;
+		display: inline-block;
+	}
+	
+	.dataset-card-stats {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		margin-left: auto;
+		font-size: 0.875rem;
+	}
+	
+	.stat-abbr {
+		font-weight: 600;
+		color: var(--color-text);
+		white-space: nowrap;
+	}
+	
+	.stat {
+		display: flex;
+		gap: 0.25rem;
+		align-items: center;
+	}
+	
+	.stat-label {
+		font-weight: 500;
+	}
+	
+	.stat-value {
+		font-weight: 600;
+		color: var(--color-text);
+	}
+	
+	.dataset-card-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid var(--color-border);
+		flex-wrap: wrap;
+		justify-content: space-between;
+	}
+	
+	.dropdown-item {
+		display: block;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		text-align: left;
+		border: none;
+		background: transparent;
+		color: var(--color-text);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		border-bottom: 1px solid var(--color-border);
+	}
+	
+	.dropdown-item:last-child {
+		border-bottom: none;
+	}
+	
+	.dropdown-item:hover:not(:disabled) {
+		background: var(--color-surface-hover);
+		color: var(--color-primary);
+	}
+	
+	.dropdown-item:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	.dropdown-item-danger {
+		color: var(--color-error);
+	}
+	
+	.dropdown-item-danger:hover:not(:disabled) {
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--color-error);
 	}
 	
 	/* Standard Selection */
@@ -818,6 +1216,12 @@
 	.datasets-table-wrapper {
 		overflow-x: auto;
 		margin-top: 1rem;
+	}
+	
+	.datasets-mobile {
+		display: none;
+		width: 100%;
+		box-sizing: border-box;
 	}
 	
 	.datasets-table {
@@ -914,5 +1318,197 @@
 	.text-warning {
 		color: var(--color-warning);
 		font-weight: 600;
+	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.page-header {
+			margin-top: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+		
+		.page-header h1 {
+			font-size: 1.75rem;
+			margin-bottom: 0.25rem;
+		}
+		
+		.page-header p {
+			font-size: 1rem;
+		}
+		
+		.card {
+			padding: 1.5rem;
+			width: 100%;
+			box-sizing: border-box;
+			overflow-x: hidden;
+			max-width: 100vw;
+		}
+		
+		.section-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+		}
+		
+		.section-header h2 {
+			font-size: 1.25rem;
+		}
+		
+		.header-actions {
+			width: 100%;
+			flex-wrap: wrap;
+			gap: 0.75rem;
+		}
+		
+		.parser-selector-header {
+			width: 100%;
+		}
+		
+		.parser-selector-header label {
+			width: 100%;
+		}
+		
+		.parser-selector-header select {
+			flex: 1;
+			min-width: 0;
+		}
+		
+		.datasets-table-wrapper {
+			display: none !important;
+			width: 0 !important;
+			height: 0 !important;
+			overflow: hidden !important;
+			padding: 0 !important;
+			margin: 0 !important;
+		}
+		
+		.datasets-table {
+			display: none !important;
+		}
+		
+		.datasets-mobile {
+			display: block !important;
+			width: 100% !important;
+			padding: 0;
+			margin: 0;
+			box-sizing: border-box;
+			max-width: 100%;
+		}
+		
+		.dataset-card-actions {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.75rem;
+		}
+		
+		.actions-dropdown-mobile {
+			display: block !important;
+			width: auto;
+			flex-shrink: 0;
+		}
+		
+		.parse-status {
+			flex: 1;
+			text-align: right;
+			justify-content: flex-end;
+		}
+		
+		.btn-dropdown-toggle {
+			width: auto;
+			justify-content: center;
+			display: flex;
+			padding: 0.5rem 1rem;
+		}
+		
+		.actions-buttons-desktop {
+			display: none !important;
+		}
+		
+		.parse-status {
+			font-size: 0.75rem;
+			padding: 0.35rem 0.6rem;
+			text-align: right;
+			flex: 1;
+			display: flex;
+			justify-content: flex-end;
+		}
+		
+		.parse-status-error {
+			max-width: none;
+			font-size: 0.7rem;
+			word-wrap: break-word;
+			white-space: normal;
+			text-align: right;
+		}
+		
+		.actions-dropdown-mobile {
+			flex-shrink: 0;
+		}
+		
+		.dataset-card-info {
+			flex-wrap: nowrap;
+			align-items: center;
+		}
+		
+		.dataset-card-name {
+			flex: 1;
+			min-width: 120px;
+		}
+		
+		.dataset-card-stats {
+			flex-shrink: 0;
+		}
+		
+		.action-buttons {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			flex-wrap: nowrap;
+			width: 100%;
+			justify-content: space-between;
+			overflow: hidden;
+		}
+		
+		.action-buttons button {
+			flex-shrink: 1;
+			min-width: 0;
+		}
+		
+		.dataset-card-stats {
+			text-align: right;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.card {
+			padding: 1rem;
+		}
+		
+		.page-header {
+			margin-top: 0.25rem;
+			margin-bottom: 0.25rem;
+		}
+		
+		.page-header h1 {
+			font-size: 1.5rem;
+			margin-bottom: 0.25rem;
+		}
+		
+		.dataset-card-mobile {
+			padding: 0.75rem;
+		}
+		
+		.dataset-card-title-row {
+			gap: 0.5rem;
+		}
+		
+		.dataset-card-name strong {
+			font-size: 0.9rem;
+		}
+		
+		.dataset-card-stats {
+			font-size: 0.8rem;
+		}
 	}
 </style>

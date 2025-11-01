@@ -177,5 +177,70 @@
 		z-index: 5;
 		position: relative;
 	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.modal-content {
+			width: 100vw;
+			height: 100vh;
+			border-radius: 0;
+			max-height: 100vh;
+		}
+		
+		.modal-overlay {
+			padding: 0;
+		}
+		
+		.modal-header {
+			padding: 0.75rem 1rem;
+		}
+		
+		.modal-header h2 {
+			font-size: 1rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			flex: 1;
+			min-width: 0;
+		}
+		
+		.btn-close {
+			width: 2.5rem;
+			height: 2.5rem;
+			min-width: 44px;
+			min-height: 44px;
+		}
+		
+		.modal-body {
+			padding: 0.75rem;
+		}
+		
+		.grid-header-row {
+			padding: 0.375rem;
+			gap: 0.25rem;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+		
+		.grid-container {
+			padding: 0.375rem;
+		}
+		
+		.data-grid {
+			gap: 0.25rem;
+		}
+		
+		.grid-header-cell {
+			padding: 0.375rem 0.25rem;
+			font-size: 0.75rem;
+			min-width: 100px;
+		}
+		
+		.grid-data-cell {
+			padding: 0.25rem;
+			font-size: 0.75rem;
+			min-height: 32px;
+		}
+	}
 </style>
 

@@ -44,21 +44,27 @@
   h1 {
     font-size: clamp(2.5rem, 5vw, 3.5rem);
     margin-bottom: 1rem;
+    color: var(--color-text);
   }
   p {
     font-size: 1.125rem;
     line-height: 1.6;
-    color: rgba(226, 232, 240, 0.8);
+    color: var(--color-text-secondary);
   }
   .primary {
     display: inline-block;
     margin-top: 2rem;
     padding: 0.75rem 1.5rem;
     border-radius: 9999px;
-    background: linear-gradient(135deg, #38bdf8, #22d3ee);
-    color: #0f172a;
+    background: var(--color-primary);
+    color: #ffffff;
     font-weight: 600;
     text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+  .primary:hover {
+    background: var(--color-primary-hover);
+    color: #ffffff;
   }
   .features {
     margin-top: 4rem;
@@ -67,12 +73,16 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
   article {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--color-surface);
     padding: 1.5rem;
     border-radius: 1rem;
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    border: 1px solid var(--color-border);
   }
   article h2 {
     margin-bottom: 0.5rem;
+    color: var(--color-text);
+  }
+  article p {
+    color: var(--color-text-secondary);
   }
 </style>

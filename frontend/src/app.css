@@ -7,15 +7,15 @@
 	--color-primary-light: #10b981; /* emerald-500 */
 	--color-secondary: #34d399; /* emerald-400 */
 	
-	--color-bg: #ffffff;
+	--color-bg: #f5f5f5; /* Less bright background - neutral gray */
 	--color-bg-secondary: #f0fdf4; /* green-50 */
 	--color-bg-tertiary: #dcfce7; /* green-100 */
 	--color-surface: #ffffff;
 	--color-surface-hover: #f0fdf4;
 	
-	--color-text: #064e3b; /* green-900 */
-	--color-text-secondary: #166534; /* green-800 */
-	--color-text-muted: #4ade80; /* green-400 */
+	--color-text: #064e3b; /* green-900 - darker for better contrast */
+	--color-text-secondary: #065f46; /* green-800 - darker */
+	--color-text-muted: #047857; /* green-700 - darker green instead of bright */
 	
 	--color-border: #bbf7d0; /* green-200 */
 	--color-border-strong: #86efac; /* green-300 */

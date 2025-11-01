@@ -35,10 +35,18 @@
     gap: 2rem;
   }
   section {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--color-bg-secondary); /* light green for light mode */
     padding: 1.5rem;
     border-radius: 1rem;
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    border: 1px solid var(--color-border);
+  }
+  
+  [data-theme="dark"] section {
+    background: var(--color-surface);
+  }
+  section h2 {
+    color: var(--color-text);
+    margin-bottom: 1rem;
   }
   ul {
     list-style: none;
@@ -49,11 +57,18 @@
   }
   h3 {
     margin: 0;
+    color: var(--color-text);
+  }
+  p {
+    color: var(--color-text-secondary);
   }
   small {
-    color: rgba(226, 232, 240, 0.6);
+    color: var(--color-text-muted);
   }
   a {
-    color: #38bdf8;
+    color: var(--color-primary);
+  }
+  a:hover {
+    color: var(--color-primary-hover);
   }
 </style>

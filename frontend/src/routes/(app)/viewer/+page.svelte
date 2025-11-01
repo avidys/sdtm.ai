@@ -436,5 +436,99 @@
 			opacity: 1;
 		}
 	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.page-container {
+			padding: 1rem;
+		}
+		
+		h1 {
+			font-size: 1.5rem;
+		}
+		
+		.subtitle-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.75rem;
+		}
+		
+		header p {
+			font-size: 1rem;
+		}
+		
+		.parser-selector-header {
+			width: 100%;
+		}
+		
+		.parser-selector-header label {
+			width: 100%;
+			justify-content: space-between;
+		}
+		
+		.parser-selector-header select {
+			flex: 1;
+			min-width: 120px;
+		}
+		
+		.features-btn-header {
+			width: 2rem;
+			height: 2rem;
+			min-width: 44px;
+			min-height: 44px;
+		}
+		
+		.modal-content {
+			width: 100vw;
+			height: 100vh;
+			border-radius: 0;
+			max-height: 100vh;
+		}
+		
+		.modal-overlay {
+			padding: 0;
+		}
+		
+		.modal-header {
+			padding: 0.75rem 1rem;
+		}
+		
+		.modal-header h2 {
+			font-size: 1rem;
+		}
+		
+		.features-list {
+			grid-template-columns: 1fr;
+		}
+		
+		.parser-change-ack {
+			padding: 0.6rem 1rem;
+			font-size: 0.85rem;
+			margin-bottom: 1rem;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.page-container {
+			padding: 0.75rem;
+		}
+		
+		h1 {
+			font-size: 1.25rem;
+		}
+		
+		header p {
+			font-size: 0.9rem;
+		}
+		
+		.title-row {
+			gap: 0.5rem;
+		}
+		
+		.features-btn-header {
+			width: 1.75rem;
+			height: 1.75rem;
+		}
+	}
 </style>
 

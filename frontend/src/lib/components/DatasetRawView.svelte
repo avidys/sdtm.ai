@@ -161,5 +161,66 @@
 	.btn-secondary:hover {
 		background: var(--color-surface-hover);
 	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.modal-content {
+			width: 100vw;
+			height: 100vh;
+			border-radius: 0;
+			max-height: 100vh;
+			max-width: 100vw;
+		}
+		
+		.modal-overlay {
+			padding: 0;
+		}
+		
+		.modal-header {
+			padding: 0.75rem 1rem;
+		}
+		
+		.modal-header h2 {
+			font-size: 1rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			flex: 1;
+			min-width: 0;
+		}
+		
+		.btn-close {
+			width: 2.5rem;
+			height: 2.5rem;
+			min-width: 44px;
+			min-height: 44px;
+		}
+		
+		.modal-body {
+			padding: 0.75rem;
+		}
+		
+		.json-viewer {
+			padding: 0.75rem;
+			max-height: calc(100vh - 200px);
+		}
+		
+		.json-viewer pre {
+			font-size: 0.75rem;
+		}
+		
+		.modal-footer {
+			flex-direction: column;
+			gap: 0.75rem;
+			padding: 1rem;
+		}
+		
+		.btn-primary,
+		.btn-secondary {
+			width: 100%;
+			min-height: 44px;
+			padding: 0.75rem 1rem;
+		}
+	}
 </style>
 

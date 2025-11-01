@@ -1,7 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  // @ts-ignore - chart.js/auto types are available but TypeScript may not resolve them
   import Chart from 'chart.js/auto';
-  import type { SensorReading } from '$lib/types';
+
+  // Temporary type definition if SensorReading doesn't exist
+  type SensorReading = {
+    timestamp: string | number | Date;
+    temperature: number;
+  };
 
   export let data: SensorReading[];
   let canvas: HTMLCanvasElement;

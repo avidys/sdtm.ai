@@ -394,5 +394,81 @@
 		color: white;
 		border: 1px solid var(--color-error);
 	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.upload-controls-row {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
+		}
+		
+		.parser-selector {
+			width: 100%;
+		}
+		
+		.parser-selector label {
+			width: 100%;
+			justify-content: space-between;
+		}
+		
+		.parser-selector select {
+			flex: 1;
+			min-width: 120px;
+		}
+		
+		.file-upload-wrapper {
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+		
+		.features-btn {
+			align-self: flex-end;
+			width: 2rem;
+			height: 2rem;
+		}
+		
+		.upload-prompt {
+			padding: 1.5rem 1rem;
+		}
+		
+		.upload-text {
+			font-size: 1rem;
+		}
+		
+		.upload-hint {
+			font-size: 0.8rem;
+		}
+		
+		.file-upload-label.compact .upload-prompt {
+			padding: 0.6rem 0.75rem;
+		}
+		
+		.file-upload-label.compact .upload-text {
+			font-size: 0.85rem;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.upload-prompt {
+			padding: 1.25rem 0.75rem;
+		}
+		
+		.upload-icon {
+			font-size: 2.5rem;
+		}
+		
+		.file-upload-label.compact .upload-icon {
+			font-size: 1.25rem;
+		}
+		
+		.upload-text {
+			font-size: 0.9rem;
+		}
+		
+		.upload-hint {
+			font-size: 0.75rem;
+		}
+	}
 </style>
 

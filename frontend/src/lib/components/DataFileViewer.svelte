@@ -293,37 +293,37 @@
 		align-items: center;
 		flex-wrap: wrap;
 		padding: 1rem;
-		background: rgba(15, 23, 42, 0.4);
+		background: var(--color-surface);
 		border-radius: 8px;
-		border: 1px solid rgba(148, 163, 184, 0.25);
+		border: 1px solid var(--color-border);
 	}
 	
 	.button {
 		display: inline-block;
 		padding: 0.5rem 1rem;
-		background: rgba(56, 189, 248, 0.2);
-		border: 1px solid rgba(56, 189, 248, 0.5);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-strong);
 		border-radius: 6px;
-		color: #38bdf8;
+		color: var(--color-primary);
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
 	
 	.button:hover {
-		background: rgba(56, 189, 248, 0.3);
-		border-color: rgba(56, 189, 248, 0.7);
+		background: var(--color-surface-hover);
+		border-color: var(--color-primary);
 	}
 	
 	.dataset-info {
 		display: flex;
 		gap: 0.5rem;
 		align-items: center;
-		color: #e2e8f0;
+		color: var(--color-text);
 	}
 	
 	.dataset-info span {
-		color: #94a3b8;
+		color: var(--color-text-secondary);
 		font-size: 0.9rem;
 	}
 	
@@ -332,46 +332,46 @@
 		gap: 0.5rem;
 		align-items: center;
 		margin-left: auto;
-		color: #38bdf8;
+		color: var(--color-primary);
 	}
 	
 	.selection-info button {
 		padding: 0.25rem 0.75rem;
-		background: rgba(56, 189, 248, 0.1);
-		border: 1px solid rgba(56, 189, 248, 0.3);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-strong);
 		border-radius: 4px;
-		color: #38bdf8;
+		color: var(--color-primary);
 		cursor: pointer;
 		font-size: 0.875rem;
 	}
 	
 	.selection-info button:hover {
-		background: rgba(56, 189, 248, 0.2);
+		background: var(--color-surface-hover);
 	}
 	
 	.status {
 		padding: 2rem;
 		text-align: center;
 		border-radius: 8px;
-		border: 1px solid rgba(148, 163, 184, 0.25);
+		border: 1px solid var(--color-border);
 	}
 	
 	.status.loading {
-		background: rgba(56, 189, 248, 0.1);
-		color: #38bdf8;
+		background: var(--color-bg-secondary);
+		color: var(--color-primary);
 	}
 	
 	.status.error {
 		background: rgba(239, 68, 68, 0.1);
-		color: #ef4444;
+		color: var(--color-error);
 	}
 	
 	.spinner {
 		width: 40px;
 		height: 40px;
 		margin: 0 auto 1rem;
-		border: 4px solid rgba(56, 189, 248, 0.2);
-		border-top-color: #38bdf8;
+		border: 4px solid var(--color-border);
+		border-top-color: var(--color-primary);
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
@@ -389,33 +389,33 @@
 	.controls input[type="search"] {
 		flex: 1;
 		padding: 0.5rem 1rem;
-		background: rgba(15, 23, 42, 0.4);
-		border: 1px solid rgba(148, 163, 184, 0.25);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
 		border-radius: 6px;
-		color: #e2e8f0;
+		color: var(--color-text);
 		font-size: 0.9rem;
 	}
 	
 	.controls input[type="search"]::placeholder {
-		color: #64748b;
+		color: var(--color-text-muted);
 	}
 	
 	.stats-section {
-		border: 1px solid rgba(148, 163, 184, 0.25);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: rgba(15, 23, 42, 0.4);
+		background: var(--color-surface);
 	}
 	
 	.stats-section summary {
 		padding: 0.75rem 1rem;
 		cursor: pointer;
 		font-weight: 500;
-		color: #e2e8f0;
+		color: var(--color-text);
 		user-select: none;
 	}
 	
 	.stats-section summary:hover {
-		background: rgba(15, 23, 42, 0.6);
+		background: var(--color-surface-hover);
 	}
 	
 	.stats-grid {
@@ -423,29 +423,29 @@
 		grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
 		gap: 1px;
 		padding: 1rem;
-		background: rgba(148, 163, 184, 0.1);
-		border-top: 1px solid rgba(148, 163, 184, 0.25);
+		background: var(--color-bg-secondary);
+		border-top: 1px solid var(--color-border);
 	}
 	
 	.stat-header {
 		padding: 0.5rem;
 		font-weight: 600;
-		color: #38bdf8;
+		color: var(--color-primary);
 		font-size: 0.875rem;
 	}
 	
 	.stat-cell {
 		padding: 0.5rem;
-		color: #e2e8f0;
+		color: var(--color-text);
 		font-size: 0.875rem;
 	}
 	
 	.table-container {
 		position: relative;
 		overflow: auto;
-		border: 1px solid rgba(148, 163, 184, 0.25);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: rgba(15, 23, 42, 0.4);
+		background: var(--color-surface);
 	}
 	
 	.spacer {
@@ -464,12 +464,13 @@
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		background: rgba(2, 6, 23, 0.95);
+		background: var(--color-surface);
+		border-bottom: 2px solid var(--color-border);
 	}
 	
 	.data-table th {
 		padding: 0;
-		border-bottom: 2px solid rgba(56, 189, 248, 0.3);
+		border-bottom: 2px solid var(--color-border-strong);
 		white-space: nowrap;
 	}
 	
@@ -478,7 +479,7 @@
 		padding: 0.5rem 0.75rem;
 		background: none;
 		border: none;
-		color: #38bdf8;
+		color: var(--color-primary);
 		font-weight: 600;
 		cursor: pointer;
 		text-align: left;
@@ -489,7 +490,7 @@
 	}
 	
 	.sort-button:hover {
-		background: rgba(56, 189, 248, 0.1);
+		background: var(--color-surface-hover);
 	}
 	
 	.sort-indicator {
@@ -498,8 +499,8 @@
 	
 	.data-table td {
 		padding: 0.4rem 0.75rem;
-		border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-		color: #e2e8f0;
+		border-bottom: 1px solid var(--color-border);
+		color: var(--color-text);
 		white-space: nowrap;
 		font-size: 0.875rem;
 	}
@@ -507,32 +508,109 @@
 	.select-col {
 		width: 60px;
 		text-align: center;
-		color: #94a3b8;
+		color: var(--color-text-secondary);
 	}
 	
 	.data-table tbody tr {
 		cursor: pointer;
 		transition: background-color 0.15s;
+		background: var(--color-surface);
 	}
 	
 	.data-table tbody tr:hover {
-		background: rgba(56, 189, 248, 0.05);
+		background: var(--color-surface-hover);
 	}
 	
 	.data-table tbody tr.selected {
-		background: rgba(56, 189, 248, 0.15);
+		background: var(--color-bg-secondary);
 	}
 	
 	.empty-state {
 		padding: 4rem 2rem;
 		text-align: center;
-		color: #94a3b8;
-		border: 2px dashed rgba(148, 163, 184, 0.25);
+		color: var(--color-text-secondary);
+		border: 2px dashed var(--color-border);
 		border-radius: 8px;
+		background: var(--color-bg-secondary);
 	}
 	
 	.empty-state p {
 		font-size: 1.1rem;
+	}
+	
+	/* Mobile Responsive Styles */
+	@media (max-width: 768px) {
+		.toolbar {
+			flex-wrap: wrap;
+			gap: 0.75rem;
+			padding: 0.75rem;
+		}
+		
+		.controls {
+			flex-direction: column;
+			gap: 0.75rem;
+			padding: 0 0.75rem;
+		}
+		
+		.controls input[type="search"] {
+			width: 100%;
+			font-size: 16px; /* Prevents zoom on iOS */
+		}
+		
+		.stats-section summary {
+			padding: 0.6rem 0.75rem;
+			font-size: 0.875rem;
+		}
+		
+		.stats-grid {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+			padding: 0.75rem;
+		}
+		
+		.table-container {
+			border-radius: 0.5rem;
+		}
+		
+		.data-table th,
+		.data-table td {
+			padding: 0.5rem 0.4rem;
+			font-size: 0.8rem;
+		}
+		
+		.sort-button {
+			padding: 0.4rem 0.5rem;
+			font-size: 0.8rem;
+		}
+		
+		.empty-state {
+			padding: 2rem 1rem;
+		}
+		
+		.empty-state p {
+			font-size: 1rem;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.toolbar {
+			padding: 0.5rem;
+		}
+		
+		.controls {
+			padding: 0 0.5rem;
+		}
+		
+		.data-table th,
+		.data-table td {
+			padding: 0.4rem 0.3rem;
+			font-size: 0.75rem;
+		}
+		
+		.sort-button {
+			padding: 0.35rem 0.4rem;
+			font-size: 0.75rem;
+		}
 	}
 </style>
 
