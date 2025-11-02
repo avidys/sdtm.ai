@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { ParsedDataset } from '$lib/standards/types';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { getDataViewerSettings } from '$lib/stores/dataViewerSettings.svelte';
+	import ColumnDetailsModal from './ColumnDetailsModal.svelte';
+	import MultiSortModal, { type SortRule } from './MultiSortModal.svelte';
 
 	// Props
 	let { 
@@ -18,7 +21,10 @@
 	let selectedRows = new SvelteSet<number>();
 	let sortColumn = $state<string | null>(null);
 	let sortAscending = $state(true);
+	let sortRules = $state<SortRule[]>([]);
 	let filterText = $state('');
+	let selectedColumnForDetails = $state<string | null>(null);
+	let showMultiSortModal = $state(false);
 	
 	// Update dataset whenever preloadedDataset changes
 	$effect(() => {
@@ -28,6 +34,7 @@
 			selectedRows.clear();
 			sortColumn = null;
 			sortAscending = true;
+			sortRules = [];
 			filterText = '';
 			scrollTop = 0;
 			error = null;
@@ -40,10 +47,81 @@
 	let viewportHeight = 500; // px
 	let scrollTop = $state(0);
 	
+	// Settings
+	const viewerSettings = getDataViewerSettings();
+	
 	// Derived state using $derived rune
 	let columns = $derived(
 		dataset ? Object.keys(dataset.columns) : []
 	);
+	
+	// Calculate column widths based on all data when fixedColumnWidths is enabled
+	let columnWidths = $derived.by(() => {
+		if (!dataset || !viewerSettings.fixedColumnWidths) return {};
+		
+		const widths: Record<string, number> = {};
+		
+		for (const col of columns) {
+			// Calculate header width (column name + sort button + stats if shown)
+			let headerWidth = col.length * 8; // ~8px per character for header font
+			
+			// Add space for sort button
+			headerWidth += 30;
+			
+			if (viewerSettings.showColumnStats) {
+				// Add space for stats section below header
+				// Stats take: "Type: xxx", "Miss: x (x%)", "Unique: x"
+				headerWidth = Math.max(headerWidth, 140); // Minimum width for stats
+			}
+			
+			// Add padding (left + right)
+			headerWidth += 30;
+			
+			// Get all values for this column and calculate max content width
+			const values = dataset.rows.map(row => String(row[col] ?? ''));
+			let maxContentWidth = headerWidth;
+			
+			if (values.length > 0) {
+				// For better accuracy, sample more values
+				// Check first 2000, last 2000, and all long values (>30 chars)
+				const sampleSize = Math.min(2000, values.length);
+				const samples = [
+					...values.slice(0, sampleSize),
+					...values.slice(-sampleSize),
+					...values.filter(v => v.length > 30) // Long values
+				];
+				
+				// Remove duplicates to avoid checking same value multiple times
+				const uniqueSamples = Array.from(new Set(samples));
+				
+				// Calculate width for each sample
+				const contentWidths = uniqueSamples.map(val => {
+					// More accurate estimation:
+					// - Numbers/dates: ~9px per character (monospace)
+					// - Text: ~6-7px per character (proportional)
+					// - Use 7.5px average for mixed content
+					const charWidth = /^[\d.\-+\s:]+$/.test(val) ? 9 : 7;
+					return val.length * charWidth;
+				});
+				
+				if (contentWidths.length > 0) {
+					const maxSampleWidth = Math.max(...contentWidths);
+					maxContentWidth = Math.max(maxContentWidth, maxSampleWidth);
+				}
+			}
+			
+			// Set minimum and maximum widths
+			const minWidth = viewerSettings.showColumnStats ? 140 : 90;
+			const maxWidth = 600; // Increased max width
+			
+			// Add extra padding for cell content
+			const calculatedWidth = maxContentWidth + 40; // +40 for padding and safety margin
+			
+			widths[col] = Math.max(minWidth, Math.min(maxWidth, calculatedWidth));
+		}
+		
+		return widths;
+	});
 	
 	let rows = $derived.by(() => {
 		if (!dataset) return [];
@@ -60,8 +138,25 @@
 			);
 		}
 		
-		// Apply sorting
-		if (sortColumn !== null) {
+		// Apply sorting (multi-column if rules exist, otherwise single column)
+		if (sortRules.length > 0) {
+			filtered = [...filtered].sort((a, b) => {
+				for (const rule of sortRules) {
+					const aVal = a[rule.column];
+					const bVal = b[rule.column];
+					
+					if (aVal == null && bVal == null) continue;
+					if (aVal == null) return 1;
+					if (bVal == null) return -1;
+					
+					const direction = rule.ascending ? 1 : -1;
+					
+					if (aVal < bVal) return -direction;
+					if (aVal > bVal) return direction;
+				}
+				return 0;
+			});
+		} else if (sortColumn !== null) {
 			const col = sortColumn;
 			filtered = [...filtered].sort((a, b) => {
 				const aVal = a[col];
@@ -89,6 +184,103 @@
 	let endIndex = $derived(Math.min(totalRows, startIndex + visibleCount));
 	let visibleRows = $derived(rows.slice(startIndex, endIndex));
 	
+	// Log virtualization variables when scrollTop changes
+	$effect(() => {
+		if (dataset) {
+			console.log('Virtualization Variables:', {
+				scrollTop,
+				rowHeight,
+				viewportHeight,
+				totalRows,
+				startIndex,
+				visibleCount,
+				endIndex,
+				visibleRowsLength: visibleRows.length,
+				translateY: startIndex * rowHeight
+			});
+		}
+	});
+	
+	// Helper function to parse date/time values
+	function parseTemporalValue(value: unknown): Date | null {
+		if (value instanceof Date) return value;
+		if (value === null || value === undefined || value === '') return null;
+		
+		const str = String(value);
+		
+		// Try ISO formats
+		if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+			const isoDate = new Date(str);
+			if (!isNaN(isoDate.getTime())) return isoDate;
+		}
+		
+		// Try parsing various date/time formats
+		const date = new Date(str);
+		if (!isNaN(date.getTime())) {
+			return date;
+		}
+		
+		return null;
+	}
+	
+	// Detect temporal column type (date, time, datetime)
+	function detectTemporalType(col: string): 'date' | 'time' | 'datetime' | null {
+		if (!dataset) return null;
+		
+		const columnType = dataset.columns[col]?.toLowerCase() || '';
+		const columnNameLower = col.toLowerCase();
+		const values = dataset.rows.map(row => row[col]).filter(v => v != null && v !== '');
+		
+		if (values.length === 0) return null;
+		
+		// Check column type annotation
+		if (columnType.includes('date') || columnType.includes('time') || columnType.includes('timestamp')) {
+			const parsedDates = values.map(v => parseTemporalValue(v)).filter(d => d !== null);
+			if (parsedDates.length / values.length > 0.7) {
+				// Determine if it's date, time, or datetime
+				const hasTime = parsedDates.some(d => d!.getHours() !== 0 || d!.getMinutes() !== 0 || d!.getSeconds() !== 0);
+				const hasDate = parsedDates.some(d => d!.getFullYear() !== 1970 || d!.getMonth() !== 0 || d!.getDate() !== 1);
+				
+				if (hasDate && hasTime) return 'datetime';
+				if (hasTime && !hasDate) return 'time';
+				return 'date';
+			}
+		}
+		
+		// Check column name patterns
+		if (columnNameLower.includes('date') || columnNameLower.includes('time') || 
+			columnNameLower.includes('timestamp') || columnNameLower.endsWith('dtc')) {
+			const parsedDates = values.map(v => parseTemporalValue(v)).filter(d => d !== null);
+			if (parsedDates.length / values.length > 0.7) {
+				const hasTime = parsedDates.some(d => d!.getHours() !== 0 || d!.getMinutes() !== 0 || d!.getSeconds() !== 0);
+				const hasDate = parsedDates.some(d => d!.getFullYear() !== 1970 || d!.getMonth() !== 0 || d!.getDate() !== 1);
+				if (hasDate && hasTime) return 'datetime';
+				if (hasTime && !hasDate) return 'time';
+				return 'date';
+			}
+		}
+		
+		// Try to parse values as dates
+		const parsedDates = values.map(v => parseTemporalValue(v)).filter(d => d !== null);
+		if (parsedDates.length / values.length > 0.7) {
+			// Check if parsed dates make sense (not all epoch 0)
+			const validDates = parsedDates.filter(d => {
+				const year = d!.getFullYear();
+				return year >= 1900 && year <= 2100;
+			});
+			
+			if (validDates.length / parsedDates.length > 0.8) {
+				const hasTime = validDates.some(d => d!.getHours() !== 0 || d!.getMinutes() !== 0 || d!.getSeconds() !== 0);
+				const hasDate = validDates.some(d => d!.getFullYear() !== 1970 || d!.getMonth() !== 0 || d!.getDate() !== 1);
+				if (hasDate && hasTime) return 'datetime';
+				if (hasTime && !hasDate) return 'time';
+				return 'date';
+			}
+		}
+		
+		return null;
+	}
+	
 	// Column statistics
 	let columnStats = $derived.by(() => {
 		if (!dataset) return {};
@@ -105,8 +297,15 @@
 			const missing = values.filter(v => v == null || v === '').length;
 			const unique = new Set(values.filter(v => v != null && v !== '')).size;
 			
+			// Detect temporal type first
+			const temporalType = detectTemporalType(col);
+			const baseType = dataset.columns[col] || 'string';
+			
+			// Use temporal type if detected, otherwise use base type
+			const displayType = temporalType ? temporalType : baseType;
+			
 			stats[col] = {
-				type: dataset.columns[col] || 'string',
+				type: displayType,
 				missing,
 				percentMissing: Math.round((missing / dataset.rows.length) * 1000) / 10,
 				unique
@@ -119,13 +318,31 @@
 	// File upload is now handled externally via props/events
 	
 	// Sort handler
-	function handleSort(column: string) {
+	function handleSort(column: string, event?: MouseEvent) {
+		// If clickColumnForDetails is enabled, show details instead of sorting
+		if (viewerSettings.clickColumnForDetails && event) {
+			event.preventDefault();
+			event.stopPropagation();
+			selectedColumnForDetails = column;
+			return;
+		}
+		
+		// Clear multi-sort when using single column sort
+		sortRules = [];
+		
 		if (sortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
 			sortColumn = column;
 			sortAscending = true;
 		}
+	}
+	
+	// Multi-sort handlers
+	function handleApplyMultiSort(rules: SortRule[]) {
+		sortRules = rules;
+		sortColumn = null; // Clear single column sort
+		sortAscending = true;
 	}
 	
 	// Row selection toggle
@@ -146,6 +363,7 @@
 	function handleScroll(event: Event) {
 		const el = event.currentTarget as HTMLElement;
 		scrollTop = el.scrollTop;
+		console.log('🔍 Scroll event triggered - scrollTop:', scrollTop);
 	}
 	
 	// Export selected rows as JSON
@@ -181,6 +399,16 @@
 					placeholder="Filter data..."
 					bind:value={filterText}
 				/>
+				<button
+					class="sort-button-toolbar"
+					onclick={() => showMultiSortModal = true}
+					title="Multi-column sort"
+				>
+					⇅ Sort
+					{#if sortRules.length > 0}
+						<span class="sort-badge">{sortRules.length}</span>
+					{/if}
+				</button>
 				{#if selectedRows.size > 0}
 					<div class="selection-info">
 						<span>{selectedRows.size} selected</span>
@@ -206,51 +434,54 @@
 	{/if}
 	
 	{#if dataset && !loading}
-		<!-- Column Statistics -->
-		<details class="stats-section">
-			<summary>Column Statistics</summary>
-			<div class="stats-grid">
-				<div class="stat-header">Column</div>
-				<div class="stat-header">Type</div>
-				<div class="stat-header">Missing</div>
-				<div class="stat-header">% Missing</div>
-				<div class="stat-header">Unique</div>
-				
-				{#each columns as col (col)}
-					<div class="stat-cell">{col}</div>
-					<div class="stat-cell">{columnStats[col]?.type || 'unknown'}</div>
-					<div class="stat-cell">{columnStats[col]?.missing || 0}</div>
-					<div class="stat-cell">{columnStats[col]?.percentMissing || 0}%</div>
-					<div class="stat-cell">{columnStats[col]?.unique || 0}</div>
-				{/each}
-			</div>
-		</details>
-		
 		<!-- Data Table with Virtualization -->
 		<div class="table-container" style="height: {viewportHeight}px" onscroll={handleScroll}>
 			<div class="spacer" style="height: {totalRows * rowHeight}px">
-				<table class="data-table" style="transform: translateY({startIndex * rowHeight}px)">
+				<table class="data-table" class:fixed-columns={viewerSettings.fixedColumnWidths}>
 					<thead>
 						<tr>
 							<th class="select-col">#</th>
 							{#each columns as col (col)}
-								<th>
-									<button
-										class="sort-button"
-										onclick={() => handleSort(col)}
-									>
-										{col}
-										{#if sortColumn === col}
-											<span class="sort-indicator">
-												{sortAscending ? '▲' : '▼'}
-											</span>
+								<th style={viewerSettings.fixedColumnWidths && columnWidths[col] ? `width: ${columnWidths[col]}px !important; min-width: ${columnWidths[col]}px !important; max-width: ${columnWidths[col]}px !important;` : ''}>
+									<div class="column-header">
+										<button
+											class="sort-button"
+											class:details-mode={viewerSettings.clickColumnForDetails}
+											onclick={(e) => handleSort(col, e)}
+											title={viewerSettings.clickColumnForDetails ? 'Click to view column details' : 'Click to sort'}
+										>
+											{col}
+											{#if !viewerSettings.clickColumnForDetails && sortColumn === col}
+												<span class="sort-indicator">
+													{sortAscending ? '▲' : '▼'}
+												</span>
+											{/if}
+										</button>
+										{#if viewerSettings.showColumnStats}
+											<div class="column-stats">
+												<div class="stat-item">
+													<span class="stat-label">Type:</span>
+													<span class="stat-value">{columnStats[col]?.type || 'unknown'}</span>
+												</div>
+												<div class="stat-item">
+													<span class="stat-label">Miss:</span>
+													<span class="stat-value">{columnStats[col]?.missing || 0} ({columnStats[col]?.percentMissing || 0}%)</span>
+												</div>
+												<div class="stat-item">
+													<span class="stat-label">Unique:</span>
+													<span class="stat-value">{columnStats[col]?.unique || 0}</span>
+												</div>
+											</div>
 										{/if}
-									</button>
+									</div>
 								</th>
 							{/each}
 						</tr>
 					</thead>
 					<tbody>
+						{#if startIndex > 0}
+							<tr style="height: {startIndex * rowHeight}px; visibility: hidden;"><td colspan={columns.length + 1}></td></tr>
+						{/if}
 						{#each visibleRows as row, i (startIndex + i)}
 							{@const rowIndex = startIndex + i}
 							<tr
@@ -259,7 +490,7 @@
 							>
 								<td class="select-col">{rowIndex + 1}</td>
 								{#each columns as col (col)}
-									<td>{row[col] ?? ''}</td>
+									<td style={viewerSettings.fixedColumnWidths && columnWidths[col] ? `width: ${columnWidths[col]}px !important; min-width: ${columnWidths[col]}px !important; max-width: ${columnWidths[col]}px !important;` : ''}>{row[col] ?? ''}</td>
 								{/each}
 							</tr>
 						{/each}
@@ -276,6 +507,23 @@
 		<div class="empty-state">
 			<p>Upload a CSV or SAS XPT file to visualize the data</p>
 		</div>
+	{/if}
+	
+	{#if dataset && selectedColumnForDetails}
+		<ColumnDetailsModal 
+			dataset={dataset}
+			columnName={selectedColumnForDetails}
+			onClose={() => selectedColumnForDetails = null}
+		/>
+	{/if}
+	
+	{#if dataset && showMultiSortModal}
+		<MultiSortModal 
+			columns={columns}
+			sortRules={sortRules}
+			onClose={() => showMultiSortModal = false}
+			onApply={handleApplyMultiSort}
+		/>
 	{/if}
 </div>
 
@@ -357,6 +605,43 @@
 		color: var(--color-text-muted);
 	}
 	
+	.sort-button-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 0.375rem;
+		color: var(--color-text);
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 500;
+		transition: all 0.2s;
+		position: relative;
+		white-space: nowrap;
+	}
+	
+	.sort-button-toolbar:hover {
+		background: var(--color-surface-hover);
+		border-color: var(--color-primary);
+	}
+	
+	.sort-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.25rem;
+		height: 1.25rem;
+		padding: 0 0.375rem;
+		background: var(--color-primary);
+		color: white;
+		border-radius: 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		margin-left: 0.25rem;
+	}
+	
 	.selection-info {
 		display: flex;
 		gap: 0.5rem;
@@ -429,44 +714,40 @@
 		color: var(--color-text-muted);
 	}
 	
-	.stats-section {
-		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		background: var(--color-surface);
+	.column-header {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		min-width: 120px;
 	}
 	
-	.stats-section summary {
-		padding: 0.75rem 1rem;
-		cursor: pointer;
+	.column-stats {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		padding: 0.1rem 0.75rem 0.1rem;
+		width: 100%;
+		font-size: 0.7rem;
+	}
+	
+	.stat-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.5rem;
+		width: 4.5rem;
+	}
+	
+	.stat-label {
+		color: var(--color-text-muted);
 		font-weight: 500;
+		flex-shrink: 0;
+	}
+	
+	.stat-value {
 		color: var(--color-text);
-		user-select: none;
-	}
-	
-	.stats-section summary:hover {
-		background: var(--color-surface-hover);
-	}
-	
-	.stats-grid {
-		display: grid;
-		grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-		gap: 1px;
-		padding: 1rem;
-		background: var(--color-bg-secondary);
-		border-top: 1px solid var(--color-border);
-	}
-	
-	.stat-header {
-		padding: 0.5rem;
-		font-weight: 600;
-		color: var(--color-primary);
-		font-size: 0.875rem;
-	}
-	
-	.stat-cell {
-		padding: 0.5rem;
-		color: var(--color-text);
-		font-size: 0.875rem;
+		font-weight: 400;
+		text-align: right;
 	}
 	
 	.table-container {
@@ -489,6 +770,12 @@
 		left: 0;
 	}
 	
+	.data-table.fixed-columns {
+		table-layout: fixed;
+		width: auto; /* Allow table to size based on column widths */
+	}
+	
+	
 	.data-table thead {
 		position: sticky;
 		top: 0;
@@ -501,11 +788,12 @@
 		padding: 0;
 		border-bottom: 2px solid var(--color-border-strong);
 		white-space: nowrap;
+		vertical-align: top;
 	}
 	
 	.sort-button {
 		width: 100%;
-		padding: 0.5rem 0.75rem;
+		padding: 0.5rem 0.75rem 0.1rem;
 		background: none;
 		border: none;
 		color: var(--color-primary);
@@ -520,6 +808,14 @@
 	
 	.sort-button:hover {
 		background: var(--color-surface-hover);
+	}
+	
+	.sort-button.details-mode {
+		cursor: pointer;
+	}
+	
+	.sort-button.details-mode:hover {
+		text-decoration: underline;
 	}
 	
 	.sort-indicator {
@@ -586,15 +882,18 @@
 			font-size: 16px; /* Prevents zoom on iOS */
 		}
 		
-		.stats-section summary {
-			padding: 0.6rem 0.75rem;
-			font-size: 0.875rem;
+		.column-header {
+			min-width: 100px;
 		}
 		
-		.stats-grid {
-			grid-template-columns: 1fr;
-			gap: 0.5rem;
-			padding: 0.75rem;
+		.column-stats {
+			font-size: 0.65rem;
+			padding: 0.05rem 0.2rem 0.2rem;
+			gap: 0.01rem;
+		}
+		
+		.stat-item {
+			gap: 0.25rem;
 		}
 		
 		.table-container {

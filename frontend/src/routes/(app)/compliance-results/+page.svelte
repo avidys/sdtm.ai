@@ -4,8 +4,9 @@
 	import type { PageData } from './$types';
 	import type { ComplianceRun } from '$lib/standards/types';
 	import { getDatasets, type EnhancedDataset } from '$lib/stores/datasets.svelte';
-	import { runComplianceCheck } from '$lib/standards/compliance';
+	import { runComplianceCheckCombined } from '$lib/standards/compliance';
 	import { getStandardSummary } from '$lib/standards/catalog';
+	import { shortenStandardName } from '$lib/utils/standardNames';
 	import * as XLSX from 'xlsx';
 
 	let { data }: { data: PageData } = $props();
@@ -37,10 +38,10 @@
 				return;
 			}
 
-			// Run compliance checks
+			// Run compliance checks using APIs (Excel + OpenAI)
 			const runs: ComplianceRun[] = [];
 			for (const dataset of datasetsToCheck) {
-				const run = runComplianceCheck({
+				const run = await runComplianceCheckCombined({
 					standard: data.standard!,
 					dataset
 				});
@@ -64,7 +65,9 @@
 		// Summary sheet
 		const summaryData = complianceRuns.map((run) => ({
 			'Dataset Name': run.datasetName,
-			'Standard': getStandardSummary(run.standardId)?.name || run.standardId,
+			'Standard': getStandardSummary(run.standardId) 
+				? shortenStandardName(getStandardSummary(run.standardId)!.name, getStandardSummary(run.standardId)!.version)
+				: run.standardId,
 			'Total Findings': run.summary.total,
 			'Errors': run.summary.errors,
 			'Warnings': run.summary.warnings,
@@ -82,7 +85,9 @@
 				'Severity': finding.severity,
 				'Message': finding.message,
 				'Rule Reference': finding.ruleReference || '',
-				'Standard': getStandardSummary(run.standardId)?.name || run.standardId
+				'Standard': getStandardSummary(run.standardId) 
+					? shortenStandardName(getStandardSummary(run.standardId)!.name, getStandardSummary(run.standardId)!.version)
+					: run.standardId
 			}))
 		);
 		const findingsSheet = XLSX.utils.json_to_sheet(findingsData);
@@ -100,7 +105,7 @@
 	const totalFindings = $derived(complianceRuns.reduce((sum, run) => sum + run.summary.total, 0));
 	const totalErrors = $derived(complianceRuns.reduce((sum, run) => sum + run.summary.errors, 0));
 	const totalWarnings = $derived(complianceRuns.reduce((sum, run) => sum + run.summary.warnings, 0));
-	const standardName = $derived(data.standard ? `${data.standard.name} v${data.standard.version}` : 'Unknown');
+	const standardName = $derived(data.standard ? shortenStandardName(data.standard.name, data.standard.version) : 'Unknown');
 </script>
 
 <div class="compliance-results">

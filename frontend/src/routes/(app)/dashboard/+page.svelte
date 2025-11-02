@@ -18,6 +18,7 @@
 	import DatasetGridViewModal from '$lib/components/DatasetGridViewModal.svelte';
 	import FileUpload from '$lib/components/FileUpload.svelte';
 	import { parseFileWithParser } from '$lib/utils/fileParser';
+	import { shortenStandardName } from '$lib/utils/standardNames';
 	import { goto } from '$app/navigation';
 	
 	let { data }: { 
@@ -543,14 +544,19 @@
 					<option value="">-- Select a standard --</option>
 					{#each data.standards as standard}
 						<option value={standard.id}>
-							{standard.name} v{standard.version} - {standard.description}
+							{shortenStandardName(standard.name, standard.version)} - {standard.description}
 						</option>
 					{/each}
 				</select>
 				
 				{#if store.selectedStandard}
 					<div class="alert alert-success">
-						Standard selected: {data.standards.find(s => s.id === store.selectedStandard)?.name}
+						Standard selected: {
+							(() => {
+								const std = data.standards.find(s => s.id === store.selectedStandard);
+								return std ? shortenStandardName(std.name, std.version) : store.selectedStandard;
+							})()
+						}
 					</div>
 				{/if}
 			</div>

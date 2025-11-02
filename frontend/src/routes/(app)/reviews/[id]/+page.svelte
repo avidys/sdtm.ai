@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { StoredComplianceRun, StoredDataset } from '$lib/server/database';
   import type { StandardDefinition } from '$lib/standards/types';
+  import { shortenStandardName } from '$lib/utils/standardNames';
   export let data: { run: StoredComplianceRun; dataset?: StoredDataset; standard: StandardDefinition };
 </script>
 
 <h1>Compliance findings for {data.run.datasetName}</h1>
 <p>
-  Validated against <strong>{data.standard.name}</strong> v{data.standard.version}.<br />
+  Validated against <strong>{shortenStandardName(data.standard.name, data.standard.version)}</strong>.<br />
   {data.run.summary.errors} errors, {data.run.summary.warnings} warnings.
 </p>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { StoredDataset, StoredComplianceRun } from '$lib/server/database';
   import type { StandardSummary } from '$lib/standards/types';
+  import { shortenStandardName } from '$lib/utils/standardNames';
   export let data: {
     datasets: StoredDataset[];
     runs: StoredComplianceRun[];
@@ -21,7 +22,7 @@
     <select name="standard" required>
       <option value="" disabled selected>Select a standard</option>
       {#each data.standards as standard}
-        <option value={standard.id}>{standard.name} v{standard.version}</option>
+        <option value={standard.id}>{shortenStandardName(standard.name, standard.version)}</option>
       {/each}
     </select>
   </label>

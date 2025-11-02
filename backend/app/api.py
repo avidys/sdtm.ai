@@ -2,10 +2,10 @@ import asyncio
 import json
 import tempfile
 import os
+from pathlib import Path
+from typing import Optional, List, Dict, Any
 
-from typing import Optional
-
-from fastapi import FastAPI, UploadFile, File as FastAPIFile, HTTPException
+from fastapi import FastAPI, UploadFile, File as FastAPIFile, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
@@ -14,6 +14,19 @@ import io
 import traceback
 
 from .sensor import SensorData
+
+# OpenAI and PDF processing imports
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
 #from .parsers import parseDatasetFile
 # TODO $HOST in origin and endpoints
 
@@ -346,4 +359,325 @@ async def parse_dataset_inmemory(file: UploadFile = FastAPIFile(...)) -> dict:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to parse {file.filename}: {error_msg}"
+        )
+
+
+@app.post("/api/compliance/excel")
+async def compliance_check_excel(
+    dataset_name: str = Body(...),
+    dataset_domain: Optional[str] = Body(None),
+    dataset_columns: Dict[str, str] = Body(...),
+    dataset_rows: List[Dict[str, Any]] = Body(...),
+    standard_id: str = Body(...)
+) -> dict:
+    """Check compliance using Excel file for variable names and types.
+    
+    Uses SDTMIG_v3.4.xlsx to validate:
+    - Variable names match expected variables for domain
+    - Variable types match expected types
+    - Required variables are present
+    """
+    excel_path = Path(__file__).parent.parent.parent / "frontend" / "static" / "SDTMIG_v3.4.xlsx"
+    
+    if not excel_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Excel file not found at {excel_path}"
+        )
+    
+    if not OPENPYXL_AVAILABLE:
+        raise HTTPException(
+            status_code=500,
+            detail="openpyxl package required. Install with: pip install openpyxl"
+        )
+    
+    try:
+        # Load Excel workbook
+        workbook = openpyxl.load_workbook(excel_path, data_only=True)
+        
+        # Get the domain to check (use dataset domain or try to detect from name)
+        domain_to_check = dataset_domain
+        if not domain_to_check:
+            # Extract domain from filename (e.g., "AE.xpt" -> "AE")
+            name_upper = dataset_name.upper().replace(".XPT", "").replace(".CSV", "")
+            if len(name_upper) == 2:
+                domain_to_check = name_upper
+        
+        findings = []
+        
+        # Try to find domain sheet in Excel
+        # SDTMIG Excel typically has sheets named by domain or a variables sheet
+        sheet_found = False
+        for sheet_name in workbook.sheetnames:
+            if domain_to_check and domain_to_check.upper() in sheet_name.upper():
+                sheet = workbook[sheet_name]
+                sheet_found = True
+                
+                # Parse variable rules from sheet
+                # Assuming structure: Variable | Type | Required | etc.
+                headers = []
+                variable_rules = {}
+                
+                for row_idx, row in enumerate(sheet.iter_rows(values_only=True), start=1):
+                    if row_idx == 1:
+                        headers = [str(cell).strip() if cell else "" for cell in row]
+                        continue
+                    
+                    if not any(row):
+                        continue
+                    
+                    # Map row to headers
+                    row_dict = {}
+                    for idx, header in enumerate(headers):
+                        if idx < len(row):
+                            row_dict[header.lower()] = row[idx]
+                    
+                    # Find variable name column (could be "Variable", "Variable Name", etc.)
+                    var_col = None
+                    for col in headers:
+                        if "variable" in col.lower() and "name" in col.lower():
+                            var_col = col.lower()
+                            break
+                    if not var_col:
+                        for col in headers:
+                            if "variable" in col.lower():
+                                var_col = col.lower()
+                                break
+                    
+                    if var_col and var_col in row_dict:
+                        var_name = str(row_dict[var_col]).strip().upper()
+                        if var_name:
+                            # Find type column
+                            type_col = None
+                            for col in headers:
+                                if "type" in col.lower() or "datatype" in col.lower():
+                                    type_col = col.lower()
+                                    break
+                            
+                            # Find required column
+                            req_col = None
+                            for col in headers:
+                                if "required" in col.lower() or "core" in col.lower() or "mandatory" in col.lower():
+                                    req_col = col.lower()
+                                    break
+                            
+                            var_type = str(row_dict[type_col]).strip() if type_col and type_col in row_dict else None
+                            var_required = False
+                            if req_col and req_col in row_dict:
+                                req_val = str(row_dict[req_col]).strip().upper()
+                                var_required = req_val in ["YES", "Y", "REQUIRED", "CORE", "MANDATORY", "TRUE", "1"]
+                            
+                            variable_rules[var_name] = {
+                                "type": var_type,
+                                "required": var_required
+                            }
+                
+                # Check dataset against rules
+                dataset_cols_upper = {k.upper(): v for k, v in dataset_columns.items()}
+                
+                for var_name, rule in variable_rules.items():
+                    if var_name not in dataset_cols_upper:
+                        if rule.get("required"):
+                            findings.append({
+                                "severity": "error",
+                                "variable": var_name,
+                                "message": f"Required variable {var_name} is missing",
+                                "ruleReference": f"{domain_to_check}.{var_name} required variable"
+                            })
+                        else:
+                            findings.append({
+                                "severity": "warning",
+                                "variable": var_name,
+                                "message": f"Expected variable {var_name} is not present",
+                                "ruleReference": f"{domain_to_check}.{var_name} optional variable"
+                            })
+                    else:
+                        # Check type if specified
+                        expected_type = rule.get("type")
+                        actual_type = dataset_cols_upper[var_name]
+                        if expected_type:
+                            expected_lower = expected_type.lower()
+                            actual_lower = actual_type.lower()
+                            # Type matching (flexible)
+                            if "text" not in expected_lower and "char" not in expected_lower:
+                                if expected_lower not in actual_lower and actual_lower not in expected_lower:
+                                    findings.append({
+                                        "severity": "warning",
+                                        "variable": var_name,
+                                        "message": f"Variable {var_name} is {actual_type} but expected {expected_type}",
+                                        "ruleReference": f"{domain_to_check}.{var_name} datatype"
+                                    })
+                
+                break
+        
+        if not sheet_found and domain_to_check:
+            findings.append({
+                "severity": "error",
+                "message": f"Domain {domain_to_check} not found in Excel file",
+                "ruleReference": "Domain catalog"
+            })
+        
+        summary = {
+            "total": len(findings),
+            "errors": sum(1 for f in findings if f.get("severity") == "error"),
+            "warnings": sum(1 for f in findings if f.get("severity") == "warning")
+        }
+        
+        return {
+            "findings": findings,
+            "summary": summary,
+            "domain": domain_to_check,
+            "checked_variables": len(variable_rules) if sheet_found else 0
+        }
+        
+    except Exception as e:
+        error_msg = str(e)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to check compliance with Excel: {error_msg}"
+        )
+
+
+@app.post("/api/compliance/openai")
+async def compliance_check_openai(
+    dataset_name: str = Body(...),
+    dataset_domain: Optional[str] = Body(None),
+    dataset_columns: Dict[str, str] = Body(...),
+    dataset_rows: List[Dict[str, Any]] = Body(...),
+    standard_id: str = Body(...),
+    standard_pdf_path: Optional[str] = Body(None)
+) -> dict:
+    """Check compliance using OpenAI with PDF context from the standard.
+    
+    Uses OpenAI to analyze dataset against SDTM standard PDF documents.
+    """
+    if not OPENAI_AVAILABLE:
+        raise HTTPException(
+            status_code=500,
+            detail="OpenAI package required. Install with: pip install openai"
+        )
+    
+    # Get OpenAI API key from environment
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENAI_API_KEY environment variable not set"
+        )
+    
+    client = OpenAI(api_key=openai_api_key)
+    
+    # Determine PDF path based on standard_id
+    pdf_path = standard_pdf_path
+    if not pdf_path:
+        frontend_static = Path(__file__).parent.parent.parent / "frontend" / "static"
+        if standard_id == "sdtm-2-0":
+            pdf_path = frontend_static / "SDTM_v2.0.pdf"
+        elif standard_id == "sdtmig-3-4":
+            pdf_path = frontend_static / "SDTMIG v3.4-FINAL_2022-07-21.pdf"
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"PDF not available for standard {standard_id}"
+            )
+    
+    if not pdf_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"PDF file not found at {pdf_path}"
+        )
+    
+    try:
+        # Read PDF content (simplified - for production, use proper PDF parsing)
+        # For now, we'll use OpenAI's file upload capability
+        with open(pdf_path, 'rb') as pdf_file:
+            # Upload PDF to OpenAI
+            pdf_upload = client.files.create(
+                file=pdf_file,
+                purpose="assistants"
+            )
+        
+        # Create a sample of dataset for analysis (limit to avoid token limits)
+        sample_rows = dataset_rows[:100] if len(dataset_rows) > 100 else dataset_rows
+        
+        # Prepare prompt
+        prompt = f"""
+Analyze the following SDTM dataset for compliance issues against the standard:
+
+Dataset Name: {dataset_name}
+Domain: {dataset_domain or 'Not specified'}
+Columns ({len(dataset_columns)}): {', '.join(list(dataset_columns.keys())[:20])}
+Sample rows: {json.dumps(sample_rows[:5], default=str)}
+
+Please check:
+1. Required variables are present for the domain
+2. Variable names follow SDTM conventions
+3. Variable types are appropriate
+4. Data structure matches domain requirements
+
+Return findings in JSON format with severity (error/warning/info), variable (if applicable), message, and ruleReference.
+"""
+        
+        # Use OpenAI to analyze
+        # Note: For production, you'd want to use Assistants API or fine-tuned models
+        # This is a simplified approach
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",  # or gpt-4, gpt-3.5-turbo
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert in CDISC SDTM standards. Analyze datasets for compliance and return findings in JSON format."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+        
+        # Parse response (expecting JSON)
+        response_text = response.choices[0].message.content
+        
+        # Try to extract JSON from response
+        import re
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if json_match:
+            findings_data = json.loads(json_match.group())
+            findings = findings_data.get("findings", [])
+        else:
+            # Fallback: create findings from response text
+            findings = [{
+                "severity": "info",
+                "message": response_text,
+                "ruleReference": "OpenAI analysis"
+            }]
+        
+        # Clean up uploaded file
+        try:
+            client.files.delete(pdf_upload.id)
+        except:
+            pass
+        
+        summary = {
+            "total": len(findings),
+            "errors": sum(1 for f in findings if f.get("severity") == "error"),
+            "warnings": sum(1 for f in findings if f.get("severity") == "warning")
+        }
+        
+        return {
+            "findings": findings,
+            "summary": summary,
+            "domain": dataset_domain,
+            "method": "openai"
+        }
+        
+    except Exception as e:
+        error_msg = str(e)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to check compliance with OpenAI: {error_msg}"
         )

@@ -11,6 +11,185 @@ interface ComplianceOptions {
   dataset: ParsedDataset;
 }
 
+// Get API base URL
+function getApiBaseUrl(): string {
+	const apiPort = import.meta.env.VITE_API_PORT || import.meta.env.PUBLIC_API_PORT || '8000';
+	const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost';
+	return `${backendUrl}:${apiPort}`;
+}
+
+/**
+ * Run compliance check using Excel file (local API)
+ */
+export async function runComplianceCheckExcel({
+	standard,
+	dataset
+}: ComplianceOptions): Promise<ComplianceRun> {
+	const apiUrl = `${getApiBaseUrl()}/api/compliance/excel`;
+	
+	try {
+		const response = await fetch(apiUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				dataset_name: dataset.name,
+				dataset_domain: dataset.domain,
+				dataset_columns: dataset.columns,
+				dataset_rows: dataset.rows,
+				standard_id: standard.id
+			})
+		});
+		
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+			throw new Error(errorData.detail || `API error: ${response.statusText}`);
+		}
+		
+		const apiResponse = await response.json();
+		
+		// Convert API response to ComplianceRun format
+		const findings: ComplianceFinding[] = (apiResponse.findings || []).map((f: any) => ({
+			id: uuidv4(),
+			domain: f.domain || dataset.domain || 'Unknown',
+			variable: f.variable,
+			severity: f.severity || 'warning',
+			message: f.message || '',
+			ruleReference: f.ruleReference || '',
+			standardId: standard.id
+		}));
+		
+		return {
+			id: uuidv4(),
+			datasetName: dataset.name,
+			standardId: standard.id,
+			startedAt: new Date().toISOString(),
+			completedAt: new Date().toISOString(),
+			findings,
+			summary: apiResponse.summary || { total: 0, errors: 0, warnings: 0 }
+		};
+	} catch (err) {
+		console.error('Excel compliance check error:', err);
+		throw err;
+	}
+}
+
+/**
+ * Run compliance check using OpenAI with PDF context (OpenAI API)
+ */
+export async function runComplianceCheckOpenAI({
+	standard,
+	dataset
+}: ComplianceOptions): Promise<ComplianceRun> {
+	const apiUrl = `${getApiBaseUrl()}/api/compliance/openai`;
+	
+	try {
+		const response = await fetch(apiUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				dataset_name: dataset.name,
+				dataset_domain: dataset.domain,
+				dataset_columns: dataset.columns,
+				dataset_rows: dataset.rows,
+				standard_id: standard.id
+			})
+		});
+		
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+			throw new Error(errorData.detail || `API error: ${response.statusText}`);
+		}
+		
+		const apiResponse = await response.json();
+		
+		// Convert API response to ComplianceRun format
+		const findings: ComplianceFinding[] = (apiResponse.findings || []).map((f: any) => ({
+			id: uuidv4(),
+			domain: f.domain || dataset.domain || 'Unknown',
+			variable: f.variable,
+			severity: f.severity || 'info',
+			message: f.message || '',
+			ruleReference: f.ruleReference || 'OpenAI analysis',
+			standardId: standard.id
+		}));
+		
+		return {
+			id: uuidv4(),
+			datasetName: dataset.name,
+			standardId: standard.id,
+			startedAt: new Date().toISOString(),
+			completedAt: new Date().toISOString(),
+			findings,
+			summary: apiResponse.summary || { total: 0, errors: 0, warnings: 0 }
+		};
+	} catch (err) {
+		console.error('OpenAI compliance check error:', err);
+		throw err;
+	}
+}
+
+/**
+ * Run compliance check - combines both Excel and OpenAI checks
+ */
+export async function runComplianceCheckCombined({
+	standard,
+	dataset
+}: ComplianceOptions): Promise<ComplianceRun> {
+	// Run both checks in parallel
+	const [excelResult, openaiResult] = await Promise.allSettled([
+		runComplianceCheckExcel({ standard, dataset }),
+		runComplianceCheckOpenAI({ standard, dataset })
+	]);
+	
+	// Combine findings from both sources
+	const allFindings: ComplianceFinding[] = [];
+	
+	if (excelResult.status === 'fulfilled') {
+		allFindings.push(...excelResult.value.findings);
+	}
+	
+	if (openaiResult.status === 'fulfilled') {
+		allFindings.push(...openaiResult.value.findings);
+	}
+	
+	// Remove duplicates (same variable + message)
+	const uniqueFindings = new Map<string, ComplianceFinding>();
+	for (const finding of allFindings) {
+		const key = `${finding.variable || ''}-${finding.message}`;
+		if (!uniqueFindings.has(key)) {
+			uniqueFindings.set(key, finding);
+		}
+	}
+	
+	const summary = Array.from(uniqueFindings.values()).reduce(
+		(acc, finding) => {
+			acc.total += 1;
+			if (finding.severity === 'error') acc.errors += 1;
+			if (finding.severity === 'warning') acc.warnings += 1;
+			return acc;
+		},
+		{ total: 0, errors: 0, warnings: 0 }
+	);
+	
+	return {
+		id: uuidv4(),
+		datasetName: dataset.name,
+		standardId: standard.id,
+		startedAt: new Date().toISOString(),
+		completedAt: new Date().toISOString(),
+		findings: Array.from(uniqueFindings.values()),
+		summary
+	};
+}
+
+/**
+ * Legacy synchronous compliance check (kept for backward compatibility)
+ * This runs client-side checks using the loaded standard definition
+ */
 export function runComplianceCheck({
   standard,
   dataset

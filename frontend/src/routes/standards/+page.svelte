@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { StandardSummary } from '$lib/standards/types';
+  import { shortenStandardName } from '$lib/utils/standardNames';
   export let data: { standards: StandardSummary[] };
   const grouped: Record<string, StandardSummary[]> = data.standards.reduce((acc, standard) => {
     const bucket = acc[standard.group] ?? [];
@@ -17,7 +18,7 @@
       <ul>
         {#each items ?? [] as standard}
           <li>
-            <h3>{standard.name} <small>v{standard.version}</small></h3>
+            <h3>{shortenStandardName(standard.name, standard.version)}</h3>
             <p>{standard.description}</p>
             {#if standard.source}
               <a href={standard.source} target="_blank" rel="noreferrer">Source</a>

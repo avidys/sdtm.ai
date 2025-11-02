@@ -4,10 +4,10 @@
 
 <section class="hero">
   <div class="content">
-    <h1>End-to-end SDTM compliance checking</h1>
+    <h1>CDISC Dataset Checker</h1>
     <p>
-      Upload SAS, CSV, or Parquet datasets, map them to CDISC standards, and
-      generate traceable findings with exportable reports and Define-XML outputs.
+      Upload SAS, CSV, or Excel datasets, browse them, check them against CDISC standards, and
+      generate traceable findings with exportable reports and Define-XML outputs (soon).
     </p>
     {#if data.session}
       <a class="primary" href="/dashboard">Open dashboard</a>
@@ -19,18 +19,23 @@
 
 <section class="features">
   <article>
-    <h2>Standards aware</h2>
-    <p>Choose from SDTM, SDTMIG, Define-XML, and Controlled Terminology packages organised by version.</p>
+    <h2>Dataset Explorer</h2>
+    <p>Developed using native web technology, allows you to explore your datasets with a focus on performance and usability.</p>
   </article>
   <article>
-    <h2>DuckDB powered</h2>
-    <p>Ingest large collections of files into an optimised DuckDB store, with optional support for Supabase/Postgres.</p>
+    <h2>Implementation</h2>
+    <p>Can be used in the cloud or integrated into your existing infrastructure inside your premises.</p>
+  </article>
+<article>
+    <h2>Standards Aware</h2>
+    <p>Choose from SDTM, SDTMIG, ADaM, Define-XML, and Controlled Terminology packages organised by version.</p>
   </article>
   <article>
-    <h2>Actionable findings</h2>
-    <p>Each issue links back to the originating standard text or codelist for faster resolution and traceability.</p>
+    <h2>Database Powered</h2>
+    <p>Ingest large collections of files into an optimised database with support for Postgres or DuckDB.</p>
   </article>
-</section>
+
+  </section>
 
 <style>
   .hero {
