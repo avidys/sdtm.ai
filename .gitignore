@@ -1,0 +1,14 @@
+node_modules
+.build
+.vercel
+.output
+.env
+.env.local
+.DS_Store
+.vscode
+.svelte-kit
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+/data/

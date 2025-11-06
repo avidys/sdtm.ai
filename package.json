@@ -1,0 +1,44 @@
+{
+  "name": "sdtm-app",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "prettier --check . && eslint .",
+    "format": "prettier --write .",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@lucia-auth/oauth": "^1.5.0",
+    "@lucia-auth/sveltekit": "^3.0.1",
+    "@sveltejs/kit": "^2.5.10",
+    "better-sqlite3": "^9.4.3",
+    "lucia": "^3.2.0",
+    "svelte": "^4.2.19",
+    "zod": "^3.23.8",
+    "@lucia-auth/adapter-sqlite": "^3.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@sveltejs/adapter-auto": "^3.2.0",
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/node": "^20.12.7",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-svelte": "^2.43.0",
+    "prettier": "^3.2.5",
+    "prettier-plugin-svelte": "^3.2.2",
+    "svelte-check": "^3.6.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.8",
+    "vitest": "^1.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "globals": "^15.3.0"
+  }
+}
