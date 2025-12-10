@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/auth-helpers-sveltekit';
+import { createBrowserClient } from '@supabase/ssr';
 import { browser } from '$app/environment';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

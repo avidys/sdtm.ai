@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/auth-helpers-sveltekit';
+import { createServerClient } from '@supabase/ssr';
 import type { Handle } from '@sveltejs/kit';
 import { createDatabase } from '$lib/server/database';
 

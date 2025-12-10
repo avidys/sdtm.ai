@@ -27,6 +27,7 @@
       </ul>
     </section>
   {/each}
+  
 </div>
 
 <style>
