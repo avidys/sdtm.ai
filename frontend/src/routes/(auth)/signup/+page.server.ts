@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, locals }) => {
+  email: async ({ request, locals }) => {
     const data = Object.fromEntries(await request.formData());
     const parsed = schema.safeParse(data);
     if (!parsed.success) {
@@ -39,5 +39,33 @@ export const actions: Actions = {
     }
 
     throw redirect(303, '/dashboard');
+  },
+  google: async ({ locals, url }) => {
+    const { data, error } = await locals.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${url.origin}/auth/callback`
+      }
+    });
+    if (error) {
+      return fail(400, { message: error.message });
+    }
+    if (data.url) {
+      throw redirect(303, data.url);
+    }
+  },
+  microsoft: async ({ locals, url }) => {
+    const { data, error } = await locals.supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        redirectTo: `${url.origin}/auth/callback`
+      }
+    });
+    if (error) {
+      return fail(400, { message: error.message });
+    }
+    if (data.url) {
+      throw redirect(303, data.url);
+    }
   }
 };

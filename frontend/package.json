@@ -1,7 +1,7 @@
 {
 	"name": "s-sdtm-ai",
 	"private": true,
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -46,6 +46,7 @@
 	"dependencies": {
 		"@supabase/ssr": "^0.7.0",
 		"@svar-ui/svelte-grid": "^2.3.0",
+		"better-sqlite3": "^12.4.1",
 		"chart.js": "^4.5.1",
 		"duckdb": "^1.4.1",
 		"exceljs": "^4.4.0",
